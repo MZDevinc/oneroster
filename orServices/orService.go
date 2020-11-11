@@ -1,50 +1,390 @@
 package orServices
 
 import (
-	"encoding/csv"
+	// "encoding/csv"
     "fmt"
 	"os"
-	"strconv"
-	// "github.com/MZDevinc/oneroster/models"
+	// "strconv"
+	"github.com/MZDevinc/oneroster/models"
+	// "github.com/jszwec/csvutil"
+	"github.com/gocarina/gocsv"
+	"strings"
 ) 
 
 
-func ProccessFiles(filePath string)  string{
-	fmt.Println("ProccessFiles -> filePath: ",filePath)
-	return "ProccessFiles -> filePath: "+filePath;
-}
 
-func ReadUsers(filePath string)  string{
-	fmt.Println("ProccessFiles -> filePath: ",filePath)
-	var message string
-	lines, err := ReadCsv(filePath)
-    if err != nil {
-		message = fmt.Sprintf("Can't read file filePath: %s ",filePath)
+func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
+	// fmt.Println(" >> inside ProccessFiles -> filePath: ",filePath)
+	// orUser := models.ORUser{}
+	// fmt.Println(" >> inside call interface func<<<  ")
+	// inResult := orProcess.HandleAddUser(orUser)
+	// fmt.Println(">>>  orProcess inResult: ", inResult)
+
+		// read the manifest csv file 
+	manifestPath := fmt.Sprintf("%s/manifest.csv", dirPath)
+	manifestRows, err := ReadManifestCsv(manifestPath)
+	if err != nil {
+		fmt.Println(">> err ReadManifestCsv: ",err)
+		return err
+	}
+	fmt.Println(">> manifestRows: ",manifestRows)
+	var orgDistrict []models.OROrg
+
+	// put the manifest data into   --- map[propertyName] = propertyValue---
+	mainfestTable := make(map[string]string)
+	for _, manifestRow := range manifestRows {
+		switch manifestRow.PropertyName {
+
+		//class sourceName
+		case models.MANIFEST_PRO_SOURCE_SYSTEMNAME:
+			mainfestTable[models.MANIFEST_PRO_SOURCE_SYSTEMNAME] = manifestRow.Value
+
+		//Acadimic Sessions		
+		case models.MANIFEST_PRO_FILE_ACADEMICSESSIONS:
+			//  ProcessAcademicSessions(dirPath, orProcess, manifestRow.Value)
+		case models.MANIFEST_PRO_FILE_CATEGORIES:
+
+		case models.MANIFEST_PRO_FILE_CLASSES:
+			mainfestTable[models.MANIFEST_PRO_FILE_CLASSES] = manifestRow.Value
+		case models.MANIFEST_PRO_FILE_CLASSRESOURCES:
+
+		case models.MANIFEST_PRO_FILE_COURSES:
+			mainfestTable[models.MANIFEST_PRO_FILE_COURSES] = manifestRow.Value
+		case models.MANIFEST_PRO_FILE_COURSERESOURCES:
+
+		case models.MANIFEST_PRO_FILE_DEMOGRAPHICS:
+
+		case models.MANIFEST_PRO_FILE_ENROLLMENTS:
+			mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS] = manifestRow.Value
+		case models.MANIFEST_PRO_FILE_LINEITEMS:
+
+		case models.MANIFEST_PRO_FILE_ORGS:
+			mainfestTable[models.MANIFEST_PRO_FILE_ORGS] = manifestRow.Value
+		case models.MANIFEST_PRO_FILE_RESOURCES:
+
+		case models.MANIFEST_PRO_FILE_RESULTS:
+
+		case models.MANIFEST_PRO_FILE_USERS:
+			mainfestTable[models.MANIFEST_PRO_FILE_USERS] = manifestRow.Value
+		}
 	
-    }else{
-		message = fmt.Sprintf("sucess read file filePath: %s lineNo: %s",filePath, strconv.Itoa( len(lines) ) )
 	}
 
-    // Loop through lines & turn into object
-   
-	fmt.Println(message)
-	return message
+	// the files should be readed in order 
+	//process Ditricts and schools
+	if mainfestTable[models.MANIFEST_PRO_FILE_ORGS] != models.IMPORT_TYPE_ABSENT {
+		doRollback := false
+		if strings.Contains(strings.ToLower(mainfestTable[models.MANIFEST_PRO_SOURCE_SYSTEMNAME]),"classlink"){
+			orgDistrict, doRollback, err = ProcessOrgsClassLink(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ORGS])
+		} else {
+			orgDistrict, doRollback, err = ProcessOrgs(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ORGS])
+		}
+		
+		if err != nil {
+			if doRollback {
+				fmt.Println(">>> (rollback) errer happen when processOrgs err -> ",err)
+				err = orProcess.RollBackOneRoster(orgDistrict)
+			} else {
+				fmt.Println(">>> (no rollback) errer happen when processOrgs err -> ",err)
+			}
+			return err
+		}
+	}
+	//process Courses
+	if mainfestTable[models.MANIFEST_PRO_FILE_COURSES] != models.IMPORT_TYPE_ABSENT {
+		err = ProcessCourses(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_COURSES])
+		if err != nil {
+			fmt.Println(">>> (rollback) errer happen when ProcessCourses err -> ",err)
+			err = orProcess.RollBackOneRoster(orgDistrict)
+			return err
+		}
+	}
+
+	//process Classes
+	if mainfestTable[models.MANIFEST_PRO_FILE_CLASSES] != models.IMPORT_TYPE_ABSENT {
+		err = ProcessClasses(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_CLASSES])
+		if err != nil {
+			fmt.Println(">>> (rollback) errer happen when ProcessClasses err -> ",err)
+			err = orProcess.RollBackOneRoster(orgDistrict)
+			return err
+		}
+	}
+
+	//process Users
+	if mainfestTable[models.MANIFEST_PRO_FILE_USERS] != models.IMPORT_TYPE_ABSENT {
+		err = ProcessUsers(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_USERS])
+		if err != nil {
+			fmt.Println(">>> (rollback) errer happen when ProcessUsers err -> ",err)
+			err = orProcess.RollBackOneRoster(orgDistrict)
+			return err
+		}
+	}
+
+	//process User Entrollments
+	if mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS] != models.IMPORT_TYPE_ABSENT {
+		err = ProcessEntrollment(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS])
+		if err != nil {
+			fmt.Println(">>> (rollback) errer happen when ProcessEntrollments err -> ",err)
+			err = orProcess.RollBackOneRoster(orgDistrict)
+			return err
+		}
+	}
+
+	return nil;
 }
 
-func ReadCsv(filename string) ([][]string, error) {
 
+func ReadManifestCsv(filename string) ([]models.OrManifest, error) {
     // Open CSV file
     f, err := os.Open(filename)
     if err != nil {
-        return [][]string{}, err
+        return nil, err
     }
     defer f.Close()
+	var manifestValues []models.OrManifest
 
-    // Read File into a Variable
-    lines, err := csv.NewReader(f).ReadAll()
-    if err != nil {
-        return [][]string{}, err
-    }
-
-    return lines, nil
+	err = gocsv.UnmarshalFile(f, &manifestValues)
+	if err != nil { 
+		fmt.Println(">>>> error UnmarshalFile <<< using gocsv: ")
+		fmt.Println(err)
+	}
+    return manifestValues, nil
 }
+
+func ProcessAcademicSessions(dirPath string, orProcess models.ORProcess, importType string) error {
+
+	academicSessionsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_ACADEMICSESSIONS)
+
+	f, err := os.Open(academicSessionsPath)
+    if err != nil {
+        return  err
+    }
+    defer f.Close()
+	var academicSessions []models.ORAcademicSessions
+
+	err = gocsv.UnmarshalFile(f, &academicSessions)
+	if err != nil { 
+		fmt.Println(">>>> error UnmarshalFile academicSessions <<< using gocsv: ")
+		fmt.Println(err)
+		return err
+	}
+	if importType == models.IMPORT_TYPE_BULK {
+		// for _, as := range academicSessions {
+		// 	fmt.Println(" >>>> acadmicSession type: ", as.SessionType)
+		// }
+	}
+
+    return nil
+}
+
+
+
+func ProcessOrgs(dirPath string, orProcess models.ORProcess, importType string) ([]models.OROrg, bool, error) {
+
+	var orgDistricts []models.OROrg
+	// do rollback for all district or not
+	rollback := true
+	orgsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_ORGS)
+
+	f, err := os.Open(orgsPath)
+    if err != nil {
+        return  orgDistricts, rollback, err
+    }
+    defer f.Close()
+	var orgs []models.OROrg
+
+	err = gocsv.UnmarshalFile(f, &orgs)
+	if err != nil { 
+		fmt.Println(err)
+		return orgDistricts, rollback, err
+	}
+	
+	if importType == models.IMPORT_TYPE_BULK {
+		for _, org := range orgs {
+			var err error = nil
+			if org.OrgType == models.ORG_TYPE_DISTRICT {
+				// collect all district 
+				orgDistricts = append(orgDistricts, org)
+				
+				rollback, err = orProcess.HandleAddDistrict(org)
+				if err != nil {
+					return orgDistricts,rollback, err
+				}
+			} else if org.OrgType == models.ORG_TYPE_SCHOOL {
+				err = orProcess.HandleAddSchool(org)
+				if err != nil {
+					return orgDistricts, true, err
+				}
+			}
+		}
+	}
+
+    return orgDistricts, false, nil
+}
+
+
+func ProcessOrgsClassLink(dirPath string, orProcess models.ORProcess, importType string) ([]models.OROrg, bool, error) {
+
+	var orgDistricts []models.OROrg
+	// do rollback for all district or not
+	rollback := true
+	orgsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_ORGS)
+
+	f, err := os.Open(orgsPath)
+    if err != nil {
+        return  orgDistricts, rollback, err
+    }
+    defer f.Close()
+	var orgs []models.OROrg
+
+	err = gocsv.UnmarshalFile(f, &orgs)
+	if err != nil { 
+		fmt.Println(err)
+		return orgDistricts, rollback, err
+	}
+	
+	if importType == models.IMPORT_TYPE_BULK {
+		for _, org := range orgs {
+			var err error = nil
+			if org.OrgType == models.ORG_TYPE_DISTRICT {
+				// collect all district 
+				orgDistricts = append(orgDistricts, org)
+				
+				rollback, err = orProcess.HandleAddDistrict(org)
+				if err != nil {
+					return orgDistricts,rollback, err
+				}
+			} 
+		}
+
+		for _, org := range orgs{
+			if org.OrgType == models.ORG_TYPE_SCHOOL {
+				if len(orgDistricts) ==1 && org.ParentSourcedId ==""{
+					org.ParentSourcedId = orgDistricts[0].SourcedId
+				}
+				err = orProcess.HandleAddSchool(org)
+				if err != nil {
+					return orgDistricts, true, err
+				}
+			}
+		}
+	}
+
+    return orgDistricts, false, nil
+}
+
+
+func ProcessCourses(dirPath string, orProcess models.ORProcess, importType string) error {
+
+	fmt.Println(">>> ProcessCourses <<<")
+	coursesPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_COURSES)
+
+	f, err := os.Open(coursesPath)
+    if err != nil {
+        return err
+    }
+    defer f.Close()
+	var orCourses []models.ORCourse
+	fmt.Println(">>> ProcessCourses before UnmarshalFile <<<")
+	err = gocsv.UnmarshalFile(f, &orCourses)
+	if err != nil { 
+		fmt.Println(">>> ProcessCourses error UnmarshalFile",err)
+		return err
+	}
+	
+
+	fmt.Println(">>> ProcessCourses  orCourses length: ",len(orCourses))
+	if importType == models.IMPORT_TYPE_BULK {
+			err := orProcess.HandleAddCourses(orCourses)
+			if err != nil {
+				fmt.Println(">>> ProcessCourses error ",err)
+				return err
+			}
+	}
+    return nil
+}
+
+
+func ProcessClasses(dirPath string, orProcess models.ORProcess, importType string) error {
+
+	fmt.Println(">>> ProcessClass <<<")
+	classesPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_CLASSES)
+
+	f, err := os.Open(classesPath)
+    if err != nil {
+        return err
+    }
+    defer f.Close()
+	var orClasses []models.ORClass
+	fmt.Println(">>> ProcessClasses before UnmarshalFile <<<")
+	err = gocsv.UnmarshalFile(f, &orClasses)
+	if err != nil { 
+		fmt.Println(">>> ProcessClasses error UnmarshalFile",err)
+		return err
+	}
+	
+	if importType == models.IMPORT_TYPE_BULK {
+			err := orProcess.HandleAddClasses(orClasses)
+			if err != nil {
+				fmt.Println(">>> ProcessClasses error ",err)
+				return err
+			}
+	}
+    return nil
+}
+
+func ProcessUsers(dirPath string, orProcess models.ORProcess, importType string) error {
+
+	usersPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_USERS)
+
+	f, err := os.Open(usersPath)
+    if err != nil {
+        return  err
+    }
+    defer f.Close()
+	var orUsers []models.ORUser
+
+	err = gocsv.UnmarshalFile(f, &orUsers)
+	if err != nil { 
+		fmt.Println(">>> ProcessUsers error UnmarshalFile",err)
+		return err
+	}
+	if importType == models.IMPORT_TYPE_BULK {
+		err := orProcess.HandleAddUser(orUsers)
+		if err != nil {
+			fmt.Println(">>> ProcessUsers error ",err)
+			return err
+		}
+	}
+
+    return nil
+}
+
+
+func ProcessEntrollment(dirPath string, orProcess models.ORProcess, importType string) error {
+
+	entrollmentsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_ENROLLMENTS)
+
+	f, err := os.Open(entrollmentsPath)
+    if err != nil {
+        return  err
+    }
+    defer f.Close()
+	var orEntrollments []models.OREnrollment
+
+	err = gocsv.UnmarshalFile(f, &orEntrollments)
+	if err != nil { 
+		fmt.Println(">>> ProcessEntrollment error UnmarshalFile",err)
+		return err
+	}
+	if importType == models.IMPORT_TYPE_BULK {
+		err := orProcess.HandleAddEnrollment(orEntrollments)
+		if err != nil {
+			fmt.Println(">>> ProcessEntrollments error ",err)
+			return err
+		}
+	}
+
+    return nil
+}
+

@@ -35,37 +35,52 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	for _, manifestRow := range manifestRows {
 		switch manifestRow.PropertyName {
 
-		//class sourceName
+		// class sourceName
 		case models.MANIFEST_PRO_SOURCE_SYSTEMNAME:
 			mainfestTable[models.MANIFEST_PRO_SOURCE_SYSTEMNAME] = manifestRow.Value
 
-		//Acadimic Sessions		
+		// Acadimic Sessions		
 		case models.MANIFEST_PRO_FILE_ACADEMICSESSIONS:
-			//  ProcessAcademicSessions(dirPath, orProcess, manifestRow.Value)
-		case models.MANIFEST_PRO_FILE_CATEGORIES:
-
+			mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS] = manifestRow.Value
+		
+		// classes
 		case models.MANIFEST_PRO_FILE_CLASSES:
 			mainfestTable[models.MANIFEST_PRO_FILE_CLASSES] = manifestRow.Value
-		case models.MANIFEST_PRO_FILE_CLASSRESOURCES:
-
+		
+		// courses	
 		case models.MANIFEST_PRO_FILE_COURSES:
 			mainfestTable[models.MANIFEST_PRO_FILE_COURSES] = manifestRow.Value
-		case models.MANIFEST_PRO_FILE_COURSERESOURCES:
-
-		case models.MANIFEST_PRO_FILE_DEMOGRAPHICS:
-
+		
+		// Enrollments
 		case models.MANIFEST_PRO_FILE_ENROLLMENTS:
 			mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS] = manifestRow.Value
-		case models.MANIFEST_PRO_FILE_LINEITEMS:
-
+	
+		// Orgs
 		case models.MANIFEST_PRO_FILE_ORGS:
 			mainfestTable[models.MANIFEST_PRO_FILE_ORGS] = manifestRow.Value
-		case models.MANIFEST_PRO_FILE_RESOURCES:
-
-		case models.MANIFEST_PRO_FILE_RESULTS:
-
+		
+		// Users	
 		case models.MANIFEST_PRO_FILE_USERS:
 			mainfestTable[models.MANIFEST_PRO_FILE_USERS] = manifestRow.Value
+
+		// Demographics ( we don't save it in Edgems, maybe we will need it later )
+		case models.MANIFEST_PRO_FILE_DEMOGRAPHICS:
+			mainfestTable[models.MANIFEST_PRO_FILE_DEMOGRAPHICS] = manifestRow.Value
+
+		// we don't read the resources and results, we don't need it until now 
+
+		// case models.MANIFEST_PRO_FILE_RESULTS:
+			// mainfestTable[models.MANIFEST_PRO_FILE_RESULTS] = manifestRow.Value
+		// case models.MANIFEST_PRO_FILE_RESOURCES:
+			// mainfestTable[models.MANIFEST_PRO_FILE_RESOURCES] = manifestRow.Value
+		// case models.MANIFEST_PRO_FILE_LINEITEMS:
+			// mainfestTable[models.MANIFEST_PRO_FILE_LINEITEMS] = manifestRow.Value
+		// case models.MANIFEST_PRO_FILE_COURSERESOURCES:
+			// mainfestTable[models.MANIFEST_PRO_FILE_COURSERESOURCES] = manifestRow.Value
+		// case models.MANIFEST_PRO_FILE_CLASSRESOURCES:
+			// mainfestTable[models.MANIFEST_PRO_FILE_CLASSRESOURCES] = manifestRow.Value
+		// case models.MANIFEST_PRO_FILE_CATEGORIES:
+			// mainfestTable[models.MANIFEST_PRO_FILE_CATEGORIES] = manifestRow.Value
 		}
 	
 	}
@@ -100,6 +115,15 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 		}
 	}
 
+	//process Academic Session
+	if mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS] != models.IMPORT_TYPE_ABSENT {
+		err = ProcessAcademicSessions(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS])
+		if err != nil {
+			fmt.Println(">>> (rollback) errer happen when ProcessAcademicSessions err -> ",err)
+			err = orProcess.RollBackOneRoster(orgDistrict)
+			return err
+		}
+	}
 	//process Classes
 	if mainfestTable[models.MANIFEST_PRO_FILE_CLASSES] != models.IMPORT_TYPE_ABSENT {
 		err = ProcessClasses(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_CLASSES])
@@ -129,6 +153,16 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 			return err
 		}
 	}
+
+	//process Demographics  (we don't use it right now)
+	// if mainfestTable[models.MANIFEST_PRO_FILE_DEMOGRAPHICS] != models.IMPORT_TYPE_ABSENT {
+	// 	err = ProcessDemographics(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_DEMOGRAPHICS])
+	// 	if err != nil {
+	// 		fmt.Println(">>> (rollback) errer happen when ProcessDemographics err -> ",err)
+	// 		err = orProcess.RollBackOneRoster(orgDistrict)
+	// 		return err
+	// 	}
+	// }
 
 	return nil;
 }
@@ -169,9 +203,12 @@ func ProcessAcademicSessions(dirPath string, orProcess models.ORProcess, importT
 		return err
 	}
 	if importType == models.IMPORT_TYPE_BULK {
-		// for _, as := range academicSessions {
-		// 	fmt.Println(" >>>> acadmicSession type: ", as.SessionType)
-		// }
+	
+		err := orProcess.HandleAddAcademicSessions(academicSessions)
+			if err != nil {
+				fmt.Println(">>> ProcessAcademicSessions error ",err)
+				return err
+			}
 	}
 
     return nil
@@ -383,6 +420,33 @@ func ProcessEntrollment(dirPath string, orProcess models.ORProcess, importType s
 			fmt.Println(">>> ProcessEntrollments error ",err)
 			return err
 		}
+	}
+
+    return nil
+}
+
+func ProcessDemographics(dirPath string, orProcess models.ORProcess, importType string) error {
+
+	demographicsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_DEMOGRAPHICS)
+
+	f, err := os.Open(demographicsPath)
+    if err != nil {
+        return  err
+    }
+    defer f.Close()
+	var orDemographics []models.ORDemographics
+
+	err = gocsv.UnmarshalFile(f, &orDemographics)
+	if err != nil { 
+		fmt.Println(">>> ProcessDemographics error UnmarshalFile",err)
+		return err
+	}
+	if importType == models.IMPORT_TYPE_BULK {
+		// err := orProcess.HandleAddorDemographics(orEntrollments)
+		// if err != nil {
+		// 	fmt.Println(">>> ProcessEntrollments error ",err)
+		// 	return err
+		// }
 	}
 
     return nil

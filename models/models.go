@@ -3,6 +3,9 @@ package models
 
 
 type ORProcess interface {
+
+	HandleAddAcademicSessions(orAcademicSessions []ORAcademicSessions) error
+
 	HandleAddUser(orUser []ORUser) error
 	// HandleReomveuser() string
 	// HandleEditUser() string
@@ -33,23 +36,6 @@ type ORProcess interface {
 type OrManifest struct {
 	PropertyName			string `csv:"propertyName"`
 	Value					string `csv:"value"`
-	// manifestVersion 		string `csv:"manifest.version"`
-	// onerosterVersion 		string `csv:"oneroster.version"`
-	// fileAcademicSessions 	string `csv:"file.academicSessions"`//Enumeration
-	// fileCategories 			string `csv:"file.categories"`//Enumeration
-	// fileClasses 			string `csv:"file.classes"`//Enumeration
-	// fileClassResources 		string `csv:"file.classResources"`//Enumeration
-	// fileCourses 			string `csv:"file.courses"`//Enumeration
-	// fileCourseResources 	string `csv:"file.courseResources"`//Enumeration
-	// fileDemographics 		string `csv:"file.demographics"`//Enumeration
-	// fileEnrollments 		string `csv:"file.enrollments"`//Enumeration
-	// fileLineItems 			string `csv:"file.lineItems"`//Enumeration
-	// fileOrgs 				string `csv:"file.orgs"`//Enumeration
-	// fileResources 			string `csv:"file.resources"`//Enumeration
-	// fileResults 			string `csv:"file.results"`//Enumeration
-	// fileUsers 				string `csv:"file.users"`//Enumeration
-	// sourceSystemName		string `csv:"source.systemName"`
-	// sourceSystemCode		string `csv:"source.systemCode"`
 }
 
 type ORAcademicSessions struct{
@@ -62,13 +48,6 @@ type ORAcademicSessions struct{
 	EndDate 			string `csv:"endDate"`//date
 	ParentSourcedId 	string `csv:"parentSourcedId"`//GUID Reference
 	SchoolYear 			string `csv:"schoolYear"`//year
-}
-
-type ORCategory struct{
-	sourcedId 			string 	//GUID
-	status 				string 	//Enumeration
-	dateLastModified 	string  //DateTime
-	title 				string 
 }
 
 type ORClass struct{
@@ -88,23 +67,6 @@ type ORClass struct{
 	Periods 			string		`csv:"periods"`
 }
 
-type ORClassResources struct{
-	sourcedId 			string 		//GUID
-	status				string 			//Enumeration
-	dateLastModified 	string //DateTime
-	title 				string 
-	classSourcedId 		string //GUID Reference
-	resourceSourcedId 	string //GUID Reference
-}
-
-type ORCourseResources struct{
-	sourcedId 			string 		//GUID
-	status				string 			//Enumeration
-	dateLastModified 	string //DateTime
-	title 				string 
-	courseSourcedId 	string //GUID Reference
-	resourceSourcedId 	string //GUID Reference
-}
 
 type ORCourse struct {
 	SourcedId 			string  	`csv:"sourcedId"`		//GUID
@@ -120,22 +82,22 @@ type ORCourse struct {
 }
 
 type ORDemographics struct{
-	sourcedId 			string 		//GUID
-	status				string 			//Enumeration
-	dateLastModified 	string //DateTime
-	birthDate			string //date
-	sex					string //Enumeration
-	americanIndianOrAlaskaNative 			string //Enumeration
-	asian									string //Enumeration
-	blackOrAfricanAmerican					string //Enumeration
-	nativeHawaiianOrOtherPacificIslander 	string //Enumeration
-	white									string //Enumeration
-	demographicRaceTwoOrMoreRaces			string //Enumeration
-	hispanicOrLatinoEthnicity				string //Enumeration
-	countryOfBirthCode						string
-	stateOfBirthAbbreviation				string
-	cityOfBirth								string
-	publicSchoolResidenceStatus 			string
+	SourcedId 			string 						`csv:"sourcedId"`//GUID
+	Status				string 						`csv:"status"`//Enumeration
+	DateLastModified 	string 						`csv:"dateLastModified"`//DateTime
+	BirthDate			string 						`csv:"birthDate"`//date
+	Sex					string 						`csv:"sex"`//Enumeration
+	AmericanIndianOrAlaskaNative 			string 	`csv:"americanIndianOrAlaskaNative"`//Enumeration
+	Asian									string 	`csv:"asian"`//Enumeration
+	BlackOrAfricanAmerican					string 	`csv:"blackOrAfricanAmerican"`//Enumeration
+	NativeHawaiianOrOtherPacificIslander 	string 	`csv:"nativeHawaiianOrOtherPacificIslander"`//Enumeration
+	White									string 	`csv:"white"`//Enumeration
+	DemographicRaceTwoOrMoreRaces			string 	`csv:"demographicRaceTwoOrMoreRaces"`//Enumeration
+	HispanicOrLatinoEthnicity				string 	`csv:"hispanicOrLatinoEthnicity"`//Enumeration
+	CountryOfBirthCode						string	`csv:"countryOfBirthCode"`
+	StateOfBirthAbbreviation				string	`csv:"stateOfBirthAbbreviation"`
+	CityOfBirth								string	`csv:"cityOfBirth"`
+	PublicSchoolResidenceStatus 			string	`csv:"publicSchoolResidenceStatus"`
 }
 
 type OREnrollment struct{
@@ -151,21 +113,6 @@ type OREnrollment struct{
 	EndDate				string 			`csv:"endDate"`//date
 }
 
-type ORLineItems struct {
-	sourcedId 			string 		//GUID
-	status				string 			//Enumeration
-	dateLastModified 	string //DateTime
-	title 				string 
-	description			string
-	assignDate			string //date
-	dueDate				string //date
-	classSourcedId		string // GUID References
-	categorySourcedId	string // GUID References
-	gradingPeriodSourcedId	string // GUID References
-	resultValueMin 		float64
-	resultValueMax		float64
-}
-
 type OROrg struct{
 	SourcedId 			string `csv:"sourcedId"`	//GUID
 	Status 				string `csv:"status"`//Enumeration
@@ -175,33 +122,6 @@ type OROrg struct{
 	Identifier 			string `csv:"identifier"`
 	ParentSourcedId 	string `csv:"parentSourcedId"`	//GUID Reference
 }
-
-type ORResource struct{
-	sourcedId 			string 		//GUID
-	status 				string 			//Enumeration
-	dateLastModified 	string //DateTime
-	vendorResourceId 	string //id
-	title				string 
-	roles				[]string //Enumeration List
-	importance			string 
-	vendorId			string //id
-	applicationId		string //id
-}
-
-
-type ORResult struct {
-	sourcedId string 		//GUID
-	status string 			//Enumeration
-	dateLastModified string //DateTime
-	lineItemSourcedId string//GUID Reference
-	studentSourcedId string //GUID Reference
-	scoreStatus string 		//Enumeration
-	score float64 			//float
-	scoreDate string 		//date
-	comment string
-
-}
-
 
 
 type ORUser struct {
@@ -226,6 +146,70 @@ type ORUser struct {
 
 }
 
+type ORCategory struct{
+	SourcedId 			string 	//GUID
+	Status 				string 	//Enumeration
+	DateLastModified 	string  //DateTime
+	Title 				string 
+}
+
+type ORClassResources struct{
+	SourcedId 			string 		//GUID
+	Status				string 			//Enumeration
+	DateLastModified 	string //DateTime
+	Title 				string 
+	ClassSourcedId 		string //GUID Reference
+	ResourceSourcedId 	string //GUID Reference
+}
+
+type ORCourseResources struct{
+	SourcedId 			string 		//GUID
+	Status				string 			//Enumeration
+	DateLastModified 	string //DateTime
+	Title 				string 
+	CourseSourcedId 	string //GUID Reference
+	ResourceSourcedId 	string //GUID Reference
+}
+
+type ORResource struct{
+	SourcedId 			string 		//GUID
+	Status 				string 			//Enumeration
+	DateLastModified 	string //DateTime
+	VendorResourceId 	string //id
+	Title				string 
+	Roles				[]string //Enumeration List
+	Importance			string 
+	VendorId			string //id
+	ApplicationId		string //id
+}
+
+type ORResult struct {
+	SourcedId string 		//GUID
+	Status string 			//Enumeration
+	DateLastModified string //DateTime
+	LineItemSourcedId string//GUID Reference
+	StudentSourcedId string //GUID Reference
+	ScoreStatus string 		//Enumeration
+	Score float64 			//float
+	ScoreDate string 		//date
+	Comment string
+
+}
+
+type ORLineItems struct {
+	SourcedId 			string 			//GUID
+	Status				string 			//Enumeration
+	DateLastModified 	string //DateTime
+	Title 				string 
+	Description			string
+	SssignDate			string //date
+	DueDate				string //date
+	ClassSourcedId		string // GUID References
+	CategorySourcedId	string // GUID References
+	GradingPeriodSourcedId	string // GUID References
+	ResultValueMin 		float64
+	ResultValueMax		float64
+}
 
 // import type 
 const (

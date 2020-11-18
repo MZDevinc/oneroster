@@ -29,6 +29,8 @@ type ORProcess interface {
 	HandleEditCourse(orCourse []ORCourse) error
 
 	HandleAddEnrollment(orEnrollment []OREnrollment) error
+	HandleDeleteEnrollments(orEnrollment []OREnrollment) error
+	HandleEditEnrollments(orEnrollment []OREnrollment) error
 
 	RollBackOneRoster(orgDistrict []OROrg) error
 

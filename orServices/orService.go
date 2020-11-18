@@ -110,7 +110,9 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 		err = ProcessCourses(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_COURSES])
 		if err != nil {
 			fmt.Println(">>> (rollback) errer happen when ProcessCourses err -> ",err)
-			err = orProcess.RollBackOneRoster(orgDistrict)
+			if mainfestTable[models.MANIFEST_PRO_FILE_COURSES] != models.IMPORT_TYPE_BULK{
+				err = orProcess.RollBackOneRoster(orgDistrict)
+			}
 			return err
 		}
 	}
@@ -119,8 +121,10 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	if mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS] != models.IMPORT_TYPE_ABSENT {
 		err = ProcessAcademicSessions(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS])
 		if err != nil {
-			fmt.Println(">>> (rollback) errer happen when ProcessAcademicSessions err -> ",err)
-			err = orProcess.RollBackOneRoster(orgDistrict)
+			if mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS] != models.IMPORT_TYPE_BULK{
+				fmt.Println(">>> (rollback) errer happen when ProcessAcademicSessions err -> ",err)
+				err = orProcess.RollBackOneRoster(orgDistrict)
+			}
 			return err
 		}
 	}
@@ -128,8 +132,10 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	if mainfestTable[models.MANIFEST_PRO_FILE_CLASSES] != models.IMPORT_TYPE_ABSENT {
 		err = ProcessClasses(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_CLASSES])
 		if err != nil {
-			fmt.Println(">>> (rollback) errer happen when ProcessClasses err -> ",err)
-			err = orProcess.RollBackOneRoster(orgDistrict)
+			if mainfestTable[models.MANIFEST_PRO_FILE_CLASSES] != models.IMPORT_TYPE_BULK{
+				fmt.Println(">>> (rollback) errer happen when ProcessClasses err -> ",err)
+				err = orProcess.RollBackOneRoster(orgDistrict)
+			}
 			return err
 		}
 	}
@@ -138,8 +144,10 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	if mainfestTable[models.MANIFEST_PRO_FILE_USERS] != models.IMPORT_TYPE_ABSENT {
 		err = ProcessUsers(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_USERS])
 		if err != nil {
-			fmt.Println(">>> (rollback) errer happen when ProcessUsers err -> ",err)
-			err = orProcess.RollBackOneRoster(orgDistrict)
+			if mainfestTable[models.MANIFEST_PRO_FILE_USERS] != models.IMPORT_TYPE_BULK{
+				fmt.Println(">>> (rollback) errer happen when ProcessUsers err -> ",err)
+				err = orProcess.RollBackOneRoster(orgDistrict)
+			}
 			return err
 		}
 	}
@@ -148,8 +156,10 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	if mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS] != models.IMPORT_TYPE_ABSENT {
 		err = ProcessEntrollment(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS])
 		if err != nil {
-			fmt.Println(">>> (rollback) errer happen when ProcessEntrollments err -> ",err)
-			err = orProcess.RollBackOneRoster(orgDistrict)
+			if mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS] != models.IMPORT_TYPE_BULK{
+				fmt.Println(">>> (rollback) errer happen when ProcessEntrollments err -> ",err)
+				err = orProcess.RollBackOneRoster(orgDistrict)
+			}
 			return err
 		}
 	}
@@ -209,6 +219,26 @@ func ProcessAcademicSessions(dirPath string, orProcess models.ORProcess, importT
 				fmt.Println(">>> ProcessAcademicSessions error ",err)
 				return err
 			}
+	}else if importType == models.IMPORT_TYPE_DELTA {
+		fmt.Println(">> *** Delta *** ProcessAcademicSessions")
+		orAcademicSessionToEdit := []models.ORAcademicSessions{}
+		orAcademicSessionIDsToDelete := []string{}
+		for _,orAcademicSession := range academicSessions {
+			if orAcademicSession.Status == models.STATUS_TYPE_ACTIVE{
+				orAcademicSessionToEdit = append(orAcademicSessionToEdit, orAcademicSession)
+				// err = orProcess.HandleEditClass(orClass)
+			}else if orAcademicSession.Status == models.STATUS_TYPE_TOBEDELETED{
+				orAcademicSessionIDsToDelete = append(orAcademicSessionIDsToDelete, orAcademicSession.SourcedId)
+			}
+			if err != nil {
+				return err
+			}
+		}
+		err = orProcess.HandleEditAcademicSessions(orAcademicSessionToEdit)
+		err = orProcess.HandleDeleteAcademicSessions(orAcademicSessionIDsToDelete)
+		if err != nil {
+			return err
+		}
 	}
 
     return nil
@@ -251,6 +281,36 @@ func ProcessOrgs(dirPath string, orProcess models.ORProcess, importType string) 
 				err = orProcess.HandleAddSchool(org)
 				if err != nil {
 					return orgDistricts, true, err
+				}
+			}
+		}
+	}else if importType == models.IMPORT_TYPE_DELTA {
+		fmt.Println(">> *** Delta *** ProcessOrgs")
+		for _, org := range orgs {
+			var err error = nil
+			if org.OrgType == models.ORG_TYPE_DISTRICT {
+				// // collect all district 
+				// orgDistricts = append(orgDistricts, org)
+
+				if org.Status == models.STATUS_TYPE_ACTIVE{
+					err = orProcess.HandleEditDistrict(org)
+				}else if org.Status == models.STATUS_TYPE_TOBEDELETED{
+					err = orProcess.HandleDeleteDistrict(org)
+				}
+
+				if err != nil {
+					return orgDistricts,false, err
+				}
+				
+			} else if org.OrgType == models.ORG_TYPE_SCHOOL {
+				if org.Status == models.STATUS_TYPE_ACTIVE{
+					err = orProcess.HandleEditSchool(org)
+				}else if org.Status == models.STATUS_TYPE_TOBEDELETED{
+					err = orProcess.HandleDeleteSchool(org)
+				}
+
+				if err != nil {
+					return orgDistricts, false, err
 				}
 			}
 		}
@@ -305,7 +365,38 @@ func ProcessOrgsClassLink(dirPath string, orProcess models.ORProcess, importType
 				}
 			}
 		}
+	}else if importType == models.IMPORT_TYPE_DELTA {
+		fmt.Println(">> *** Delta *** ProcessOrgs")
+		for _, org := range orgs {
+			var err error = nil
+			if org.OrgType == models.ORG_TYPE_DISTRICT {
+				// collect all district 
+				orgDistricts = append(orgDistricts, org)
+
+				if org.Status == models.STATUS_TYPE_ACTIVE{
+					err = orProcess.HandleEditDistrict(org)
+				}else if org.Status == models.STATUS_TYPE_TOBEDELETED{
+					err = orProcess.HandleDeleteDistrict(org)
+				}
+
+				if err != nil {
+					return orgDistricts,false, err
+				}
+				
+			} else if org.OrgType == models.ORG_TYPE_SCHOOL {
+				if org.Status == models.STATUS_TYPE_ACTIVE{
+					err = orProcess.HandleEditSchool(org)
+				}else if org.Status == models.STATUS_TYPE_TOBEDELETED{
+					err = orProcess.HandleDeleteSchool(org)
+				}
+				
+				if err != nil {
+					return orgDistricts, false, err
+				}
+			}
+		}
 	}
+
 
     return orgDistricts, false, nil
 }
@@ -313,7 +404,6 @@ func ProcessOrgsClassLink(dirPath string, orProcess models.ORProcess, importType
 
 func ProcessCourses(dirPath string, orProcess models.ORProcess, importType string) error {
 
-	fmt.Println(">>> ProcessCourses <<<")
 	coursesPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_COURSES)
 
 	f, err := os.Open(coursesPath)
@@ -322,21 +412,40 @@ func ProcessCourses(dirPath string, orProcess models.ORProcess, importType strin
     }
     defer f.Close()
 	var orCourses []models.ORCourse
-	fmt.Println(">>> ProcessCourses before UnmarshalFile <<<")
 	err = gocsv.UnmarshalFile(f, &orCourses)
 	if err != nil { 
 		fmt.Println(">>> ProcessCourses error UnmarshalFile",err)
 		return err
 	}
-	
 
-	fmt.Println(">>> ProcessCourses  orCourses length: ",len(orCourses))
 	if importType == models.IMPORT_TYPE_BULK {
 			err := orProcess.HandleAddCourses(orCourses)
 			if err != nil {
 				fmt.Println(">>> ProcessCourses error ",err)
 				return err
 			}
+	}else if importType == models.IMPORT_TYPE_DELTA {
+		fmt.Println(">> *** Delta *** ProcessCourses")
+		orCourseToEdit := []models.ORCourse{}
+		orCoursesIDsToDelete := []string{}
+		for _,orCourse := range orCourses {
+			if orCourse.Status == models.STATUS_TYPE_ACTIVE{
+				// err = orProcess.HandleEditCourse(orCourse)
+				orCourseToEdit = append(orCourseToEdit, orCourse)
+			}else if orCourse.Status == models.STATUS_TYPE_TOBEDELETED{
+				// err = orProcess.HandleDeleteCourse(orCourse)
+				orCoursesIDsToDelete = append(orCoursesIDsToDelete, orCourse.SourcedId)
+			}
+			if err != nil {
+				return err
+			}
+		}
+		err = orProcess.HandleEditCourse(orCourseToEdit)
+		err = orProcess.HandleDeleteCourses(orCoursesIDsToDelete)
+		if err != nil {
+			return err
+		}
+		
 	}
     return nil
 }
@@ -366,6 +475,26 @@ func ProcessClasses(dirPath string, orProcess models.ORProcess, importType strin
 				fmt.Println(">>> ProcessClasses error ",err)
 				return err
 			}
+	}else if importType == models.IMPORT_TYPE_DELTA {
+		fmt.Println(">> *** Delta *** ProcessClasses")
+		orClassesToEdit := []models.ORClass{}
+		orClassIDsToDelete := []string{}
+		for _,orClass := range orClasses {
+			if orClass.Status == models.STATUS_TYPE_ACTIVE{
+				orClassesToEdit = append(orClassesToEdit, orClass)
+				// err = orProcess.HandleEditClass(orClass)
+			}else if orClass.Status == models.STATUS_TYPE_TOBEDELETED{
+				orClassIDsToDelete = append(orClassIDsToDelete, orClass.SourcedId)
+			}
+			if err != nil {
+				return err
+			}
+		}
+		err = orProcess.HandleEditClass(orClassesToEdit)
+		err = orProcess.HandleDeleteClasses(orClassIDsToDelete)
+		if err != nil {
+			return err
+		}
 	}
     return nil
 }
@@ -390,6 +519,25 @@ func ProcessUsers(dirPath string, orProcess models.ORProcess, importType string)
 		err := orProcess.HandleAddUser(orUsers)
 		if err != nil {
 			fmt.Println(">>> ProcessUsers error ",err)
+			return err
+		}
+	}else if importType == models.IMPORT_TYPE_DELTA {
+		fmt.Println(">> *** Delta *** ProcessUsers")
+		orUsersToEdit := []models.ORUser{}
+		orUsersIDsToDelete := []string{}
+		for _,orUser := range orUsers {
+			if orUser.Status == models.STATUS_TYPE_ACTIVE{
+				orUsersToEdit = append(orUsersToEdit, orUser)
+			}else if orUser.Status == models.STATUS_TYPE_TOBEDELETED{
+				orUsersIDsToDelete = append(orUsersIDsToDelete, orUser.SourcedId)
+			}
+			if err != nil {
+				return err
+			}
+		}
+		err = orProcess.HandleEditUsers(orUsersToEdit)
+		err = orProcess.HandleDeleteUsers(orUsersIDsToDelete)
+		if err != nil {
 			return err
 		}
 	}
@@ -420,6 +568,8 @@ func ProcessEntrollment(dirPath string, orProcess models.ORProcess, importType s
 			fmt.Println(">>> ProcessEntrollments error ",err)
 			return err
 		}
+	}else if importType == models.IMPORT_TYPE_DELTA {
+		fmt.Println(">> *** Delta *** ProcessEntrollment")
 	}
 
     return nil
@@ -447,6 +597,8 @@ func ProcessDemographics(dirPath string, orProcess models.ORProcess, importType 
 		// 	fmt.Println(">>> ProcessEntrollments error ",err)
 		// 	return err
 		// }
+	}else if importType == models.IMPORT_TYPE_DELTA {
+		fmt.Println(">> *** Delta *** ProcessDemographics")
 	}
 
     return nil

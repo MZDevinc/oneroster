@@ -5,26 +5,28 @@ package models
 type ORProcess interface {
 
 	HandleAddAcademicSessions(orAcademicSessions []ORAcademicSessions) error
+	HandleDeleteAcademicSessions(orAcademicSessionsIDs []string) error
+	HandleEditAcademicSessions(orAcademicSessions []ORAcademicSessions) error
 
 	HandleAddUser(orUser []ORUser) error
-	// HandleReomveuser() string
-	// HandleEditUser() string
+	HandleDeleteUsers(oruserIDs []string) error
+	HandleEditUsers(orUser []ORUser) error
 
 	HandleAddDistrict(orOrg OROrg) (bool, error)
-	// HandleReomveDistrict() string
-	// HandleEditDistrict() string
+	HandleDeleteDistrict(orOrg OROrg) error
+	HandleEditDistrict(orOrg OROrg) error
 
 	HandleAddSchool(orOrg OROrg) error
-	// HandleReomveSchool() string
-	// HandleEditSchool() string
+	HandleDeleteSchool(orOrg OROrg) error
+	HandleEditSchool(orOrg OROrg) error
 
 	HandleAddClasses(orClass []ORClass) error
-	// HandleReomveClass() string
-	// HandleEditClass() string
+	HandleDeleteClasses(orClassIDs []string) error
+	HandleEditClass(orClass []ORClass) error
 
 	HandleAddCourses(orCourse []ORCourse) error
-	// HandleReomveCourse() string
-	// HandleEditCourse() string
+	HandleDeleteCourses(orCourseIDs []string) error
+	HandleEditCourse(orCourse []ORCourse) error
 
 	HandleAddEnrollment(orEnrollment []OREnrollment) error
 
@@ -261,5 +263,11 @@ const (
 	ORG_TYPE_DISTRICT = "district"
 	ORG_TYPE_SCHOOL = "school"
 
+)
+
+//Status types
+const (
+	STATUS_TYPE_ACTIVE = "Active"
+	STATUS_TYPE_TOBEDELETED = "ToBeDeleted"
 )
 

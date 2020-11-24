@@ -4,33 +4,46 @@ package models
 
 type ORProcess interface {
 
+	// AcademicSessions
 	HandleAddAcademicSessions(orAcademicSessions []ORAcademicSessions) error
 	HandleDeleteAcademicSessions(orAcademicSessionsIDs []string) error
 	HandleEditAcademicSessions(orAcademicSessions []ORAcademicSessions) error
+	HandleAddOrEditAcademicSessions(orAcademicSessions []ORAcademicSessions) error
 
-	HandleAddUser(orUser []ORUser) error
+	// Users
+	HandleAddUsers(orUser []ORUser) error
 	HandleDeleteUsers(oruserIDs []string) error
 	HandleEditUsers(orUser []ORUser) error
+	HandleAddOrEditUsers(orUser []ORUser) error
 
+	// Districts
 	HandleAddDistrict(orOrg OROrg) (bool, error)
 	HandleDeleteDistrict(orOrg OROrg) error
 	HandleEditDistrict(orOrg OROrg) error
+	HandleAddOrEditDistrict(orOrg OROrg) error
 
+	// Schools
 	HandleAddSchool(orOrg OROrg) error
 	HandleDeleteSchool(orOrg OROrg) error
 	HandleEditSchool(orOrg OROrg) error
+	HandleAddOrEditSchool(orOrg OROrg) error
 
+	// Classes
 	HandleAddClasses(orClass []ORClass) error
 	HandleDeleteClasses(orClassIDs []string) error
 	HandleEditClass(orClass []ORClass) error
+	HandleAddOrEditClass(orClass []ORClass) error
 
+	// Courses
 	HandleAddCourses(orCourse []ORCourse) error
 	HandleDeleteCourses(orCourseIDs []string) error
 	HandleEditCourse(orCourse []ORCourse) error
+	HandleAddOrEditCourse(orCourse []ORCourse) error
 
+	// Enrollments
 	HandleAddEnrollment(orEnrollment []OREnrollment) error
 	HandleDeleteEnrollments(orEnrollment []OREnrollment) error
-	HandleEditEnrollments(orEnrollment []OREnrollment) error
+	HandleAddOrEditEnrollments(orEnrollment []OREnrollment) error
 
 	RollBackOneRoster(orgDistrict []OROrg) error
 
@@ -43,110 +56,126 @@ type OrManifest struct {
 }
 
 type ORAcademicSessions struct{
-	SourcedId 			string `csv:"sourcedId"`//GUID
-	Status 				string `csv:"status"`//Enumeration
-	DateLastModified 	string `csv:"dateLastModified"`//DateTime
-	Title 				string `csv:"title"`
-	SessionType 		string `csv:"type"`//Enumeration
-	StartDate 			string `csv:"startDate"`//date
-	EndDate 			string `csv:"endDate"`//date
+	SourcedId 			string `csv:"sourcedId" json:"sourcedId"`//GUID
+	Status 				string `csv:"status" json:"status"`//Enumeration
+	DateLastModified 	string `csv:"dateLastModified" json:"dateLastModified"`//DateTime
+	Title 				string `csv:"title" json:"title"`
+	SessionType 		string `csv:"type" json:"type"`//Enumeration
+	StartDate 			string `csv:"startDate" json:"startDate"`//date
+	EndDate 			string `csv:"endDate" json:"endDate"`//date
 	ParentSourcedId 	string `csv:"parentSourcedId"`//GUID Reference
-	SchoolYear 			string `csv:"schoolYear"`//year
+	Parent 				GUIDRef `json:"parent"`
+	Children 			[]GUIDRef `json:"children"`
+	SchoolYear 			string `csv:"schoolYear" json:"schoolYear"`//year
 }
 
 type ORClass struct{
-	SourcedId 			string 			`csv:"sourcedId"`	//GUID
-	Status 				string 			`csv:"status"`//Enumeration
-	DateLastModified 	string 			`csv:"dateLastModified"`//DateTime
-	Title 				string 			`csv:"title"`
-	Grades 				string 			`csv:"grades"` //[]string
+	SourcedId 			string 			`csv:"sourcedId" json:"sourcedId"`	//GUID
+	Status 				string 			`csv:"status" json:"status"`//Enumeration
+	DateLastModified 	string 			`csv:"dateLastModified" json:"dateLastModified"`//DateTime
+	Title 				string 			`csv:"title" json:"title"`
+	Grades 				string 			`csv:"grades" json:""` //[]string
 	CourseSourcedId 	string 			`csv:"courseSourcedId"`//GUID Reference
-	ClassCode 			string			`csv:"classCode"`
-	ClassType 			string 			`csv:"classType"`//Enumeration
-	Location 			string 			`csv:"location"`
-	SchoolSourcedId 	string 			`csv:"schoolSourcedId"`//GUID Reference
-	TermSourcedIds 		string 		`csv:"termSourcedIds"`//List of GUID Reference
-	Subjects 			string 		`csv:"subjects"`
-	SubjectCodes 		string		`csv:"subjectCodes"`
-	Periods 			string		`csv:"periods"`
+	Course 				GUIDRef 		`json:"course"`
+	ClassCode 			string			`csv:"classCode" json:"classCode"`
+	ClassType 			string 			`csv:"classType" json:"classType"`//Enumeration
+	Location 			string 			`csv:"location" json:"location"`
+	SchoolSourcedId 	string 			`csv:"schoolSourcedId" `//GUID Reference
+	School				GUIDRef			`json:"school"`	
+	TermSourcedIds 		string 		`csv:"termSourcedIds" `//List of GUID Reference
+	Terms				[]GUIDRef	`json:"terms"`
+	Subjects 			string 		`csv:"subjects" json:"subjects"`
+	SubjectCodes 		string		`csv:"subjectCodes" json:"subjectCodes"`
+	Periods 			string		`csv:"periods" json:"periods"`
+	Resources			[]GUIDRef	`json:"resources"`
 }
 
 
 type ORCourse struct {
-	SourcedId 			string  	`csv:"sourcedId"`		//GUID
-	Status				string 		`csv:"status"`		//Enumeration
-	DateLastModified 	string 		`csv:"dateLastModified"`//DateTime
+	SourcedId 			string  	`csv:"sourcedId" json:"sourcedId"`		//GUID
+	Status				string 		`csv:"status" json:"status"`		//Enumeration
+	DateLastModified 	string 		`csv:"dateLastModified" json:"dateLastModified"`//DateTime
 	SchoolYearSourcedId string 		`csv:"schoolYearSourcedId"`//GUID Reference
-	Title 				string 		`csv:"title"`
-	CourseCode			string		`csv:"courseCode"`
+	SchoolYear			GUIDRef 	`json:"schoolYear"`
+	Title 				string 		`csv:"title" json:"title"`
+	CourseCode			string		`csv:"courseCode" json:"courseCode"`
 	// Grades				*[]string	`csv:"grades"`
 	OrgSourcedId		string 		`csv:"orgSourcedId"`//GUID Reference
-	// Subjects			*[]string	`csv:"subjects"`
-	SubjectCodes		string		`csv:"subjectCodes"`
+	Org					GUIDRef 	`json:"org"`
+	Subjects			string		`csv:"subjects" json:"subjects"`
+	SubjectCodes		string		`csv:"subjectCodes" json:"subjectCodes"`
 }
 
 type ORDemographics struct{
-	SourcedId 			string 						`csv:"sourcedId"`//GUID
-	Status				string 						`csv:"status"`//Enumeration
-	DateLastModified 	string 						`csv:"dateLastModified"`//DateTime
-	BirthDate			string 						`csv:"birthDate"`//date
-	Sex					string 						`csv:"sex"`//Enumeration
-	AmericanIndianOrAlaskaNative 			string 	`csv:"americanIndianOrAlaskaNative"`//Enumeration
-	Asian									string 	`csv:"asian"`//Enumeration
-	BlackOrAfricanAmerican					string 	`csv:"blackOrAfricanAmerican"`//Enumeration
-	NativeHawaiianOrOtherPacificIslander 	string 	`csv:"nativeHawaiianOrOtherPacificIslander"`//Enumeration
-	White									string 	`csv:"white"`//Enumeration
-	DemographicRaceTwoOrMoreRaces			string 	`csv:"demographicRaceTwoOrMoreRaces"`//Enumeration
-	HispanicOrLatinoEthnicity				string 	`csv:"hispanicOrLatinoEthnicity"`//Enumeration
-	CountryOfBirthCode						string	`csv:"countryOfBirthCode"`
-	StateOfBirthAbbreviation				string	`csv:"stateOfBirthAbbreviation"`
-	CityOfBirth								string	`csv:"cityOfBirth"`
-	PublicSchoolResidenceStatus 			string	`csv:"publicSchoolResidenceStatus"`
+	SourcedId 			string 						`csv:"sourcedId" json:"sourcedId"`//GUID
+	Status				string 						`csv:"status" json:"status"`//Enumeration
+	DateLastModified 	string 						`csv:"dateLastModified" json:"dateLastModified"`//DateTime
+	BirthDate			string 						`csv:"birthDate" json:"birthDate"`//date
+	Sex					string 						`csv:"sex" json:"sex"`//Enumeration
+	AmericanIndianOrAlaskaNative 			string 	`csv:"americanIndianOrAlaskaNative" json:"americanIndianOrAlaskaNative"`//Enumeration
+	Asian									string 	`csv:"asian" json:"asian"`//Enumeration
+	BlackOrAfricanAmerican					string 	`csv:"blackOrAfricanAmerican" json:"blackOrAfricanAmerican"`//Enumeration
+	NativeHawaiianOrOtherPacificIslander 	string 	`csv:"nativeHawaiianOrOtherPacificIslander" json:"nativeHawaiianOrOtherPacificIslander"`//Enumeration
+	White									string 	`csv:"white" json:"white"`//Enumeration
+	DemographicRaceTwoOrMoreRaces			string 	`csv:"demographicRaceTwoOrMoreRaces" json:"demographicRaceTwoOrMoreRaces"`//Enumeration
+	HispanicOrLatinoEthnicity				string 	`csv:"hispanicOrLatinoEthnicity" json:"hispanicOrLatinoEthnicity"`//Enumeration
+	CountryOfBirthCode						string	`csv:"countryOfBirthCode" json:"countryOfBirthCode"`
+	StateOfBirthAbbreviation				string	`csv:"stateOfBirthAbbreviation" json:"stateOfBirthAbbreviation"`
+	CityOfBirth								string	`csv:"cityOfBirth" json:"cityOfBirth"`
+	PublicSchoolResidenceStatus 			string	`csv:"publicSchoolResidenceStatus" json:"publicSchoolResidenceStatus"`
 }
 
 type OREnrollment struct{
-	SourcedId 			string			`csv:"sourcedId"` //GUID
-	Status				string 			`csv:"status"`//Enumeration
-	DateLastModified 	string 			`csv:"dateLastModified"`//DateTime
+	SourcedId 			string			`csv:"sourcedId" json:"sourcedId"` //GUID
+	Status				string 			`csv:"status" json:"status"`//Enumeration
+	DateLastModified 	string 			`csv:"dateLastModified" json:"dateLastModified"`//DateTime
 	ClassSourcedId		string 			`csv:"classSourcedId"`//GUID Reference
+	Class				GUIDRef 		`json:"class"`
 	SchoolSourcedId		string 			`csv:"schoolSourcedId"`//GUID Reference
+	School				GUIDRef 		`json:"school"`
 	UserSourcedId 		string 			`csv:"userSourcedId"`//GUID Reference
-	Role				string 			`csv:"role"`//Enumeration
-	Primary				bool			`csv:"primary"`
-	BeginDate			string 			`csv:"beginDate"`//date
-	EndDate				string 			`csv:"endDate"`//date
+	User		 		GUIDRef 		`json:"user"`
+	Role				string 			`csv:"role" json:"role"`//Enumeration
+	Primary				bool			`csv:"primary" json:"primary"`
+	BeginDate			string 			`csv:"beginDate" json:"beginDate"`//date
+	EndDate				string 			`csv:"endDate" json:"endDate"`//date
 }
 
 type OROrg struct{
-	SourcedId 			string `csv:"sourcedId"`	//GUID
-	Status 				string `csv:"status"`//Enumeration
-	DateLastModified 	string `csv:"dateLastModified"`//DateTime
-	Name 				string `csv:"name"`
-	OrgType 			string `csv:"type"`// type Enumeration
-	Identifier 			string `csv:"identifier"`
+	SourcedId 			string `csv:"sourcedId" json:"sourcedId"`	//GUID
+	Status 				string `csv:"status" json:"status"`//Enumeration
+	DateLastModified 	string `csv:"dateLastModified" json:"dateLastModified"`//DateTime
+	Name 				string `csv:"name" json:"name"`
+	OrgType 			string `csv:"type" json:"type"`// type Enumeration
+	Identifier 			string `csv:"identifier" json:"identifier"`
 	ParentSourcedId 	string `csv:"parentSourcedId"`	//GUID Reference
+	Parent 				GUIDRef 	`json:"parent"`
+	Children 			[]GUIDRef 	`json:"children"`
 }
 
 
 type ORUser struct {
-	SourcedId 			string 	`csv:"sourcedId"`	//GUID
-	Status 				string 	`csv:"status"`		//Enumeration
-	DateLastModified 	string 	`csv:"dateLastModified"`//DateTime
-	EnabledUser 		bool	`csv:"enabledUser"`
+	SourcedId 			string 	`csv:"sourcedId" json:"sourcedId"`	//GUID
+	Status 				string 	`csv:"status" json:"status"`		//Enumeration
+	DateLastModified 	string 	`csv:"dateLastModified" json:"dateLastModified"`//DateTime
+	EnabledUser 		bool	`csv:"enabledUser" json:"enabledUser"`
 	OrgSourcedIds 		string 	`csv:"orgSourcedIds"`//List of GUID References.
-	Role 				string 	`csv:"role"`		//Enumeration
-	Username 			string	`csv:"username"`
+	Orgs				[]GUIDRef	`json:"orgs"`
+	Role 				string 	`csv:"role" json:"role"`		//Enumeration
+	Username 			string	`csv:"username" json:"username"`
 	UserIds 			string  `csv:"userIds"` //[] string
-	GivenName 			string	`csv:"givenName"`
-	FamilyName 			string	`csv:"familyName"`
-	MiddleName 			string	`csv:"middleName"`
-	Identifier 			string 	`csv:"identifier"`
-	Email 				string	`csv:"email"`
-	Sms 				string	`csv:"sms"`
-	Phone 				string	`csv:"phone"`
-	AgentSourcedIds 	string `csv:"agentSourcedIds"`//List of GUID References
-	Grades 				string 	`csv:"grades"`
-	Password 			string	`csv:"password"`
+	UserIdsIdentifer 	[]UserIdentifer		`json:"userIds"`
+	GivenName 			string	`csv:"givenName" json:"givenName"`
+	FamilyName 			string	`csv:"familyName" json:"familyName"`
+	MiddleName 			string	`csv:"middleName" json:"middleName"`
+	Identifier 			string 	`csv:"identifier" json:"identifier"`
+	Email 				string	`csv:"email" json:"email"`
+	Sms 				string	`csv:"sms" json:"sms"`
+	Phone 				string	`csv:"phone" json:"phone"`
+	AgentSourcedIds 	string 	`csv:"agentSourcedIds"`//List of GUID References
+	Agents			 	[]GUIDRef 	`json:"agents"`
+	Grades 				string 	`csv:"grades" json:"grades"`
+	Password 			string	`csv:"password" json:"password"`
 
 }
 
@@ -273,3 +302,34 @@ const (
 	STATUS_TYPE_TOBEDELETED = "ToBeDeleted"
 )
 
+
+
+////// JSON ///////
+type GUIDRef struct{
+	Href		string			`json:"href"`
+	SourcedId	string 			`json:"sourcedId"`
+	GUIDType	string 			`json:"type"`
+}
+
+type UserIdentifer struct {
+	Type 		string 			`json:"type"`
+	Identifier 	string 			`json:"identifier"`
+}
+
+const (
+	GUIDTYPE_ACADEMICSESSION = "academicSession"
+	GUIDTYPE_CATEGORY = "category"
+	GUIDTYPE_CLASS = "class"
+	GUIDTYPE_COURSE = "course"
+	GUIDTYPE_DEMOGRAPHICS = "demographics"
+	GUIDTYPE_ENROLLMENT = "enrollment"
+	GUIDTYPE_ORG = "org"
+	GUIDTYPE_RESOURCE = "resource"
+	GUIDTYPE_LINEITEM = "lineItem"
+	GUIDTYPE_RESULT = "result"
+	GUIDTYPE_USER = "user"
+	GUIDTYPE_STUDENT = "student"
+	GUIDTYPE_TEACHER = "teacher"
+	GUIDTYPE_TERM = "term"
+	GUIDTYPE_GRADINGPERIOD = "gardingPeriod"
+)

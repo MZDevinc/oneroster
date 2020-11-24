@@ -7,20 +7,16 @@ import (
 	// "github.com/jszwec/csvutil"
 	"github.com/gocarina/gocsv"
 	"strings"
+
 ) 
 
 
 
 func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
-	// fmt.Println(" >> inside ProccessFiles -> filePath: ",filePath)
-	// orUser := models.ORUser{}
-	// fmt.Println(" >> inside call interface func<<<  ")
-	// inResult := orProcess.HandleAddUser(orUser)
-	// fmt.Println(">>>  orProcess inResult: ", inResult)
 
-		// read the manifest csv file 
+	// read the manifest csv file 
 	manifestPath := fmt.Sprintf("%s/manifest.csv", dirPath)
-	manifestRows, err := ReadManifestCsv(manifestPath)
+	manifestRows, err := ReadManifestCSV(manifestPath)
 	if err != nil {
 		fmt.Println(">> err ReadManifestCsv: ",err)
 		return err
@@ -88,9 +84,9 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	if mainfestTable[models.MANIFEST_PRO_FILE_ORGS] != models.IMPORT_TYPE_ABSENT {
 		doRollback := false
 		if strings.Contains(strings.ToLower(mainfestTable[models.MANIFEST_PRO_SOURCE_SYSTEMNAME]),"classlink"){
-			orgDistrict, doRollback, err = ProcessOrgsClassLink(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ORGS])
+			orgDistrict, doRollback, err = ProcessOrgsClassLinkCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ORGS])
 		} else {
-			orgDistrict, doRollback, err = ProcessOrgs(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ORGS])
+			orgDistrict, doRollback, err = ProcessOrgsCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ORGS])
 		}
 		
 		if err != nil {
@@ -102,7 +98,7 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	}
 	//process Courses
 	if mainfestTable[models.MANIFEST_PRO_FILE_COURSES] != models.IMPORT_TYPE_ABSENT {
-		err = ProcessCourses(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_COURSES])
+		err = ProcessCoursesCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_COURSES])
 		if err != nil {
 			if mainfestTable[models.MANIFEST_PRO_FILE_COURSES] != models.IMPORT_TYPE_BULK{
 				err = orProcess.RollBackOneRoster(orgDistrict)
@@ -113,7 +109,7 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 
 	//process Academic Session
 	if mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS] != models.IMPORT_TYPE_ABSENT {
-		err = ProcessAcademicSessions(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS])
+		err = ProcessAcademicSessionsCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS])
 		if err != nil {
 			if mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS] != models.IMPORT_TYPE_BULK{
 				err = orProcess.RollBackOneRoster(orgDistrict)
@@ -123,7 +119,7 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	}
 	//process Classes
 	if mainfestTable[models.MANIFEST_PRO_FILE_CLASSES] != models.IMPORT_TYPE_ABSENT {
-		err = ProcessClasses(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_CLASSES])
+		err = ProcessClassesCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_CLASSES])
 		if err != nil {
 			if mainfestTable[models.MANIFEST_PRO_FILE_CLASSES] != models.IMPORT_TYPE_BULK{
 				err = orProcess.RollBackOneRoster(orgDistrict)
@@ -134,7 +130,7 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 
 	//process Users
 	if mainfestTable[models.MANIFEST_PRO_FILE_USERS] != models.IMPORT_TYPE_ABSENT {
-		err = ProcessUsers(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_USERS])
+		err = ProcessUsersCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_USERS])
 		if err != nil {
 			if mainfestTable[models.MANIFEST_PRO_FILE_USERS] != models.IMPORT_TYPE_BULK{
 				err = orProcess.RollBackOneRoster(orgDistrict)
@@ -145,7 +141,7 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 
 	//process User Entrollments
 	if mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS] != models.IMPORT_TYPE_ABSENT {
-		err = ProcessEntrollment(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS])
+		err = ProcessEntrollmentCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS])
 		if err != nil {
 			if mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS] != models.IMPORT_TYPE_BULK{
 				err = orProcess.RollBackOneRoster(orgDistrict)
@@ -168,7 +164,7 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 }
 
 
-func ReadManifestCsv(filename string) ([]models.OrManifest, error) {
+func ReadManifestCSV(filename string) ([]models.OrManifest, error) {
     // Open CSV file
     f, err := os.Open(filename)
     if err != nil {
@@ -184,7 +180,7 @@ func ReadManifestCsv(filename string) ([]models.OrManifest, error) {
     return manifestValues, nil
 }
 
-func ProcessAcademicSessions(dirPath string, orProcess models.ORProcess, importType string) error {
+func ProcessAcademicSessionsCSV(dirPath string, orProcess models.ORProcess, importType string) error {
 
 	academicSessionsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_ACADEMICSESSIONS)
 
@@ -200,7 +196,7 @@ func ProcessAcademicSessions(dirPath string, orProcess models.ORProcess, importT
 		return err
 	}
 	if importType == models.IMPORT_TYPE_BULK {
-	
+	  
 		err := orProcess.HandleAddAcademicSessions(academicSessions)
 			if err != nil {
 				return err
@@ -231,7 +227,7 @@ func ProcessAcademicSessions(dirPath string, orProcess models.ORProcess, importT
 
 
 
-func ProcessOrgs(dirPath string, orProcess models.ORProcess, importType string) ([]models.OROrg, bool, error) {
+func ProcessOrgsCSV(dirPath string, orProcess models.ORProcess, importType string) ([]models.OROrg, bool, error) {
 
 	var orgDistricts []models.OROrg
 	// do rollback for all district or not
@@ -304,7 +300,7 @@ func ProcessOrgs(dirPath string, orProcess models.ORProcess, importType string) 
 }
 
 
-func ProcessOrgsClassLink(dirPath string, orProcess models.ORProcess, importType string) ([]models.OROrg, bool, error) {
+func ProcessOrgsClassLinkCSV(dirPath string, orProcess models.ORProcess, importType string) ([]models.OROrg, bool, error) {
 
 	var orgDistricts []models.OROrg
 	// do rollback for all district or not
@@ -385,7 +381,7 @@ func ProcessOrgsClassLink(dirPath string, orProcess models.ORProcess, importType
 }
 
 
-func ProcessCourses(dirPath string, orProcess models.ORProcess, importType string) error {
+func ProcessCoursesCSV(dirPath string, orProcess models.ORProcess, importType string) error {
 
 	coursesPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_COURSES)
 
@@ -431,7 +427,7 @@ func ProcessCourses(dirPath string, orProcess models.ORProcess, importType strin
 }
 
 
-func ProcessClasses(dirPath string, orProcess models.ORProcess, importType string) error {
+func ProcessClassesCSV(dirPath string, orProcess models.ORProcess, importType string) error {
 
 	classesPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_CLASSES)
 
@@ -474,7 +470,7 @@ func ProcessClasses(dirPath string, orProcess models.ORProcess, importType strin
     return nil
 }
 
-func ProcessUsers(dirPath string, orProcess models.ORProcess, importType string) error {
+func ProcessUsersCSV(dirPath string, orProcess models.ORProcess, importType string) error {
 
 	usersPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_USERS)
 
@@ -490,7 +486,7 @@ func ProcessUsers(dirPath string, orProcess models.ORProcess, importType string)
 		return err
 	}
 	if importType == models.IMPORT_TYPE_BULK {
-		err := orProcess.HandleAddUser(orUsers)
+		err := orProcess.HandleAddUsers(orUsers)
 		if err != nil {
 			return err
 		}
@@ -518,7 +514,7 @@ func ProcessUsers(dirPath string, orProcess models.ORProcess, importType string)
 }
 
 
-func ProcessEntrollment(dirPath string, orProcess models.ORProcess, importType string) error {
+func ProcessEntrollmentCSV(dirPath string, orProcess models.ORProcess, importType string) error {
 
 	entrollmentsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_ENROLLMENTS)
 
@@ -553,7 +549,7 @@ func ProcessEntrollment(dirPath string, orProcess models.ORProcess, importType s
 			}
 		}
 		err = orProcess.HandleDeleteEnrollments(orEntrollmentsIDsToDelete)
-		err = orProcess.HandleEditEnrollments(orEntrollmentsToEdit)
+		err = orProcess.HandleAddOrEditEnrollments(orEntrollmentsToEdit)
 		if err != nil {
 			return err
 		}
@@ -562,7 +558,7 @@ func ProcessEntrollment(dirPath string, orProcess models.ORProcess, importType s
     return nil
 }
 
-func ProcessDemographics(dirPath string, orProcess models.ORProcess, importType string) error {
+func ProcessDemographicsCSV(dirPath string, orProcess models.ORProcess, importType string) error {
 
 	demographicsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_DEMOGRAPHICS)
 

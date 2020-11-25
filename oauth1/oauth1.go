@@ -114,7 +114,8 @@ func (s *HMACSigner) GetSignature(baseString string) (string, error) {
 	mac.Write([]byte(baseString))
 	return base64.StdEncoding.EncodeToString(mac.Sum(nil)), nil
 }
-func (s *HMACSigner) GetMethod() string { return "HMAC-SHA1" }
+// func (s *HMACSigner) GetMethod() string { return "HMAC-SHA1" }
+func (s *HMACSigner) GetMethod() string { return "HMAC-SHA256" }
 
 // GetRSASigner generates the RSA-SHA1 signing algorythm
 func GetRSASigner(privateKey *rsa.PrivateKey) *RSASigner {
@@ -147,8 +148,8 @@ type OAuthParameters struct {
 	Signer         OauthSigner
 	ConsumerKey    *string
 	ConsumerSecret *string
-	Token          *string
-	TokenSecret    *string
+	// Token          *string
+	// TokenSecret    *string
 	Version        *string
 	Method         *string
 	Nonce          *string
@@ -168,9 +169,9 @@ func (o *OAuthParameters) Check() error {
 	if o.ConsumerKey == nil {
 		return ErrF("Consumer Key not set")
 	}
-	if o.Token == nil {
-		return ErrF("Token not set")
-	}
+	// if o.Token == nil {
+	// 	return ErrF("Token not set")
+	// }
 	if o.Version == nil {
 		v := "1.0"
 		o.Version = &v
@@ -193,11 +194,12 @@ func (o *OAuthParameters) GetOauthParameters() ([]KV, error) {
 	// }
 
 	oauthKeys := []KV{
+		KV{"oauth_callback", "about:blank"},
 		KV{"oauth_consumer_key", *o.ConsumerKey},
 		KV{"oauth_nonce", *o.Nonce},
-		KV{"oauth_timestamp", *o.Timestamp},
 		// KV{"oauth_token", *o.Token},
 		KV{"oauth_signature_method", *o.Method},
+		KV{"oauth_timestamp", *o.Timestamp},
 		KV{"oauth_version", *o.Version},
 	}
 	return oauthKeys, nil
@@ -210,17 +212,18 @@ func (o *OAuthParameters) GetOAuthSignature(method, requestUrl string, queryStri
 	}
 
 	allParameters = append(allParameters, queryString...)
-
+	fmt.Println("====> sign allParameters : ",allParameters)
 	baseString, err := GetBaseString(method, requestUrl, allParameters)
 	if err != nil {
 		return "", err
 	}
 
+	fmt.Println("====> baseString : ",baseString)
 	sig, err := o.Signer.GetSignature(baseString)
 	if err != nil {
 		return "", err
 	}
-	fmt.Println("==== > sig : ",sig)
+	fmt.Println("====> sig : ",sig)
 	return sig, nil
 }
 
@@ -231,7 +234,7 @@ func (o *OAuthParameters) GetOAuthHeader(verb, requestUrl string, queryString []
 	}
 
 	oauthParameters, err := o.GetOauthParameters()
-	fmt.Println("==== > oauthParameters : ",oauthParameters)
+	// fmt.Println("====> oauthParameters : ",oauthParameters)
 	if err != nil {
 		return "", err
 	}
@@ -241,7 +244,7 @@ func (o *OAuthParameters) GetOAuthHeader(verb, requestUrl string, queryString []
 	for i, kv := range oauthParameters {
 		oauthStrings[i] = fmt.Sprintf(`%s="%s"`, url.QueryEscape(kv.Key), url.QueryEscape(kv.Val))
 	}
-	fmt.Println("==== > oauthStrings : ",oauthStrings)
+	// fmt.Println("==== > oauthStrings : ",oauthStrings)
 	return "OAuth " + strings.Join(oauthStrings, ", "), nil
 }
 
@@ -304,7 +307,8 @@ func (o *OAuthParameters) DoOauthRequestTest(verb string, requestUrl string, que
 
 	req.Header.Add("Authorization", authHeader)
 
-	fmt.Println("=====> authHeader: ",authHeader)
+	fmt.Println(" =====>  Header Authorization 1: ", req.Header.Get("Authorization"))
+	// fmt.Println("=====> authHeader: ",authHeader)
 	// fmt.Println("=====> qsParams: ",qsParams)
 	fmt.Println("=====> req: ",req)
 	c := http.DefaultClient
@@ -313,7 +317,9 @@ func (o *OAuthParameters) DoOauthRequestTest(verb string, requestUrl string, que
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("=====> resp.Body: ",resp.Body, "   >>status: ", resp.Status,"  resp", resp)
 	body, err := ioutil.ReadAll(resp.Body)
+	fmt.Println("=====> resp.Body string: ",string(body))
 	return body, nil
 	// return "", nil
 

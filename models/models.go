@@ -333,3 +333,26 @@ const (
 	GUIDTYPE_TERM = "term"
 	GUIDTYPE_GRADINGPERIOD = "gardingPeriod"
 )
+
+
+type OrgsResponse struct {
+    Orgs []OROrg `json:"orgs"`
+}
+
+type AcademicSessionsResponse struct {
+    AcademicSessions []ORAcademicSessions `json:"academicSessions"`
+}
+type ClassesResponse struct {
+    Classes []ORClass `json:"classes"`
+}
+type CoursesResponse struct {
+    Courses []ORCourse `json:"courses"`
+}
+type EnrollmentsResponse struct {
+    Enrollments []OREnrollment `json:"enrollments"`
+}
+
+type UsersResponse struct {
+    Users []ORUser `json:"users"`
+}
+

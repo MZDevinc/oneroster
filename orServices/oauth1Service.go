@@ -25,8 +25,8 @@ import (
 
 const (
 	oAuthVersion = "1.0"
-	SigHMAC      = "HMAC-SHA1" 
-	// SigHMAC      = "HMAC-SHA256"
+	// SigHMAC      = "HMAC-SHA1" 
+	SigHMAC      = "HMAC-SHA256"
 	// Version      = "0.1"
 
 )
@@ -192,6 +192,7 @@ func (p *Consumer) SetSigner(s oauth1.OauthSigner) {
 // and a secret. ts is a tokenSecret field from the oauth spec,
 // that in this case must be empty.
 func Sign(form url.Values, u, method string, firm oauth1.OauthSigner) (string, error) {
+	fmt.Println("--------> sign form: ", form)
 	str, err := getBaseString(method, u, form)
 	if err != nil {
 		return "", err
@@ -213,7 +214,7 @@ func getBaseString(m, u string, form url.Values) (string, error) {
 			kv = append(kv, s)
 		}
 	}
-
+	fmt.Println(" kv: ", kv)
 	str, err := oauth1.GetBaseString(m, u, kv)
 	if err != nil {
 		return "", err
@@ -237,184 +238,3 @@ func nonce() string {
 }
 
 
-
-// func (c *Consumer) oauthParams(r *request, signatue string) (map[string]string, error) {
-// 	oauthParams := map[string]string{
-// 		"oauth_consumer_key":     c.ConsumerKey,
-// 		"oauth_signature_method": signatue,
-// 		"oauth_version":          "1.0",
-// 	}
-
-// 	// if c.SignatureMethod != PLAINTEXT {
-// 		oauthParams["oauth_timestamp"] = strconv.FormatInt(time.Now().Unix(), 10)
-// 		oauthParams["oauth_nonce"] = nonce()
-// 	// }
-
-// 	if r.credentials != nil {
-// 		oauthParams["oauth_token"] = r.credentials.Token
-// 	}
-
-// 	if r.verifier != "" {
-// 		oauthParams["oauth_verifier"] = r.verifier
-// 	}
-
-// 	if r.sessionHandle != "" {
-// 		oauthParams["oauth_session_handle"] = r.sessionHandle
-// 	}
-
-// 	if r.callbackURL != "" {
-// 		oauthParams["oauth_callback"] = r.callbackURL
-// 	}
-
-	
-
-// 	var signature string
-// 	key := encode(c.Credentials.Secret, false)
-// 	key = append(key, '&')
-// 	if r.credentials != nil {
-// 		key = append(key, encode(r.credentials.Secret, false)...)
-// 	}
-// 	h := hmac.New(sha1.New, key)
-// 	writeBaseString(h, r.method, r.u, r.form, oauthParams)
-// 	signature = base64.StdEncoding.EncodeToString(h.Sum(key[:0]))
-
-// 	// switch c.SignatureMethod {
-// 	// case HMACSHA1:
-// 	// 	key := encode(c.Credentials.Secret, false)
-// 	// 	key = append(key, '&')
-// 	// 	if r.credentials != nil {
-// 	// 		key = append(key, encode(r.credentials.Secret, false)...)
-// 	// 	}
-// 	// 	h := hmac.New(sha1.New, key)
-// 	// 	writeBaseString(h, r.method, r.u, r.form, oauthParams)
-// 	// 	signature = base64.StdEncoding.EncodeToString(h.Sum(key[:0]))
-// 	// case RSASHA1:
-// 	// 	if c.PrivateKey == nil {
-// 	// 		return nil, errors.New("oauth: private key not set")
-// 	// 	}
-// 	// 	h := sha1.New()
-// 	// 	writeBaseString(h, r.method, r.u, r.form, oauthParams)
-// 	// 	rawSignature, err := rsa.SignPKCS1v15(rand.Reader, c.PrivateKey, crypto.SHA1, h.Sum(nil))
-// 	// 	if err != nil {
-// 	// 		return nil, err
-// 	// 	}
-// 	// 	signature = base64.StdEncoding.EncodeToString(rawSignature)
-// 	// case PLAINTEXT:
-// 	// 	rawSignature := encode(c.Credentials.Secret, false)
-// 	// 	rawSignature = append(rawSignature, '&')
-// 	// 	if r.credentials != nil {
-// 	// 		rawSignature = append(rawSignature, encode(r.credentials.Secret, false)...)
-// 	// 	}
-// 	// 	signature = string(rawSignature)
-// 	// default:
-// 	// 	return nil, errors.New("oauth: unknown signature method")
-// 	// }
-
-// 	oauthParams["oauth_signature"] = signature
-// 	return oauthParams, nil
-// }
-
-// func writeBaseString(w io.Writer, method string, u *url.URL, form url.Values, oauthParams map[string]string) {
-// 	// Method
-// 	w.Write(encode(strings.ToUpper(method), false))
-// 	w.Write([]byte{'&'})
-
-// 	// URL
-// 	scheme := strings.ToLower(u.Scheme)
-// 	host := strings.ToLower(u.Host)
-
-// 	uNoQuery := *u
-// 	uNoQuery.RawQuery = ""
-// 	path := uNoQuery.RequestURI()
-
-// 	switch {
-// 	case scheme == "http" && strings.HasSuffix(host, ":80"):
-// 		host = host[:len(host)-len(":80")]
-// 	case scheme == "https" && strings.HasSuffix(host, ":443"):
-// 		host = host[:len(host)-len(":443")]
-// 	}
-
-// 	w.Write(encode(scheme, false))
-// 	w.Write(encode("://", false))
-// 	w.Write(encode(host, false))
-// 	w.Write(encode(path, false))
-// 	w.Write([]byte{'&'})
-
-// 	// Create sorted slice of encoded parameters. Parameter keys and values are
-// 	// double encoded in a single step. This is safe because double encoding
-// 	// does not change the sort order.
-// 	queryParams := u.Query()
-// 	p := make(byKeyValue, 0, len(form)+len(queryParams)+len(oauthParams))
-// 	p = p.appendValues(form)
-// 	p = p.appendValues(queryParams)
-// 	for k, v := range oauthParams {
-// 		p = append(p, keyValue{encode(k, true), encode(v, true)})
-// 	}
-// 	sort.Sort(p)
-
-// 	// Write the parameters.
-// 	encodedAmp := encode("&", false)
-// 	encodedEqual := encode("=", false)
-// 	sep := false
-// 	for _, kv := range p {
-// 		if sep {
-// 			w.Write(encodedAmp)
-// 		} else {
-// 			sep = true
-// 		}
-// 		w.Write(kv.key)
-// 		w.Write(encodedEqual)
-// 		w.Write(kv.value)
-// 	}
-// }
-
-
-// var noEscape = [256]bool{
-// 	'A': true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
-// 	'a': true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
-// 	'0': true, true, true, true, true, true, true, true, true, true,
-// 	'-': true,
-// 	'.': true,
-// 	'_': true,
-// 	'~': true,
-// }
-// func encode(s string, double bool) []byte {
-// 	// Compute size of result.
-// 	m := 3
-// 	if double {
-// 		m = 5
-// 	}
-// 	n := 0
-// 	for i := 0; i < len(s); i++ {
-// 		if noEscape[s[i]] {
-// 			n++
-// 		} else {
-// 			n += m
-// 		}
-// 	}
-
-// 	p := make([]byte, n)
-
-// 	// Encode it.
-// 	j := 0
-// 	for i := 0; i < len(s); i++ {
-// 		b := s[i]
-// 		if noEscape[b] {
-// 			p[j] = b
-// 			j++
-// 		} else if double {
-// 			p[j] = '%'
-// 			p[j+1] = '2'
-// 			p[j+2] = '5'
-// 			p[j+3] = "0123456789ABCDEF"[b>>4]
-// 			p[j+4] = "0123456789ABCDEF"[b&15]
-// 			j += 5
-// 		} else {
-// 			p[j] = '%'
-// 			p[j+1] = "0123456789ABCDEF"[b>>4]
-// 			p[j+2] = "0123456789ABCDEF"[b&15]
-// 			j += 3
-// 		}
-// 	}
-// 	return p
-// }

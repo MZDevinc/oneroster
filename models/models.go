@@ -1,6 +1,8 @@
 package models
 
-
+import (
+	"github.com/globalsign/mgo/bson"
+)
 
 type ORProcess interface {
 
@@ -12,9 +14,9 @@ type ORProcess interface {
 
 	// Users
 	HandleAddUsers(orUser []ORUser) error
-	HandleDeleteUsers(oruserIDs []string) error
+	HandleDeleteUsers(oruserIDs []string, districtIDs []bson.ObjectId) error
 	HandleEditUsers(orUser []ORUser) error
-	HandleAddOrEditUsers(orUser []ORUser) error
+	HandleAddOrEditUsers(orUser []ORUser, districtIDs []bson.ObjectId) error
 
 	// Districts
 	HandleAddDistrict(orOrg OROrg) (bool, error)
@@ -24,28 +26,30 @@ type ORProcess interface {
 
 	// Schools
 	HandleAddSchool(orOrg OROrg) error
-	HandleDeleteSchool(orOrg OROrg) error
+	HandleDeleteSchool(orOrg OROrg, districtIDs []bson.ObjectId) error
 	HandleEditSchool(orOrg OROrg) error
-	HandleAddOrEditSchool(orOrg OROrg) error
+	HandleAddOrEditSchool(orOrg OROrg, districtIDs []bson.ObjectId) error
 
 	// Classes
 	HandleAddClasses(orClass []ORClass) error
-	HandleDeleteClasses(orClassIDs []string) error
+	HandleDeleteClasses(orClassIDs []string, districtIDs []bson.ObjectId) error
 	HandleEditClass(orClass []ORClass) error
-	HandleAddOrEditClass(orClass []ORClass) error
+	HandleAddOrEditClass(orClass []ORClass, districtIDs []bson.ObjectId) error
 
 	// Courses
 	HandleAddCourses(orCourse []ORCourse) error
-	HandleDeleteCourses(orCourseIDs []string) error
+	HandleDeleteCourses(orCourseIDs []string, districtIDs []bson.ObjectId) error
 	HandleEditCourse(orCourse []ORCourse) error
-	HandleAddOrEditCourse(orCourse []ORCourse) error
+	HandleAddOrEditCourse(orCourse []ORCourse, districtIDs []bson.ObjectId) error
 
 	// Enrollments
 	HandleAddEnrollment(orEnrollment []OREnrollment) error
-	HandleDeleteEnrollments(orEnrollment []OREnrollment) error
-	HandleAddOrEditEnrollments(orEnrollment []OREnrollment) error
+	HandleDeleteEnrollments(orEnrollment []OREnrollment, districtIDs []bson.ObjectId) error
+	HandleAddOrEditEnrollments(orEnrollment []OREnrollment, districtIDs []bson.ObjectId) error
 
 	RollBackOneRoster(orgDistrict []OROrg) error
+
+	GetDistrictsIDs(orOrgs []OROrg) ([]bson.ObjectId, error) 
 
 }
 
@@ -334,6 +338,8 @@ const (
 	GUIDTYPE_GRADINGPERIOD = "gardingPeriod"
 )
 
+
+//// Rest API Responses //// 
 
 type OrgsResponse struct {
     Orgs []OROrg `json:"orgs"`

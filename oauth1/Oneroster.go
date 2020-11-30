@@ -29,7 +29,7 @@ func OneRosterNew(clientId string, clientSecret string) OneRoster {
 
 // Makes the request to the given OneRoster URL with the stored key and secret
 // It returns a the status code and JSON response
-func (rr OneRoster) MakeRosterRequest(reqUrl string) (int, string) {
+func (rr OneRoster) MakeRosterRequest(reqUrl string) (int, string, http.Header) {
 	timestamp := fmt.Sprint(time.Now().Unix())
 	nonce := generateNonce(len(timestamp))
 
@@ -57,7 +57,7 @@ func (rr OneRoster) MakeRosterRequest(reqUrl string) (int, string) {
 }
 
 // Makes the actual request to the URL with the generated auth header
-func makeGetRequest(reqUrl, authHeader string) (int, string) {
+func makeGetRequest(reqUrl, authHeader string) (int, string, http.Header) {
 	hc := http.Client{}
 	req, _ := http.NewRequest("GET", reqUrl, nil)
 
@@ -65,10 +65,11 @@ func makeGetRequest(reqUrl, authHeader string) (int, string) {
 
 	resp, err := hc.Do(req)
 	if (err != nil) {
-		return 0, "An error occurred, check your URL"
+		return 0, "An error occurred, check your URL", nil
 	}
 	bodyBytes, _ := ioutil.ReadAll(resp.Body)
-	return resp.StatusCode, string(bodyBytes)
+
+	return resp.StatusCode, string(bodyBytes), resp.Header
 }
 
 // Creates the auth header from a map of the oauth parameters

@@ -13,7 +13,7 @@ type ORProcess interface {
 	HandleAddOrEditAcademicSessions(orAcademicSessions []ORAcademicSessions) error
 
 	// Users
-	HandleAddUsers(orUser []ORUser) error
+	HandleAddUsers(orUser []ORUser, districtIDs []bson.ObjectId) error
 	HandleDeleteUsers(oruserIDs []string, districtIDs []bson.ObjectId) error
 	HandleEditUsers(orUser []ORUser) error
 	HandleAddOrEditUsers(orUser []ORUser, districtIDs []bson.ObjectId) error
@@ -21,29 +21,29 @@ type ORProcess interface {
 	// Districts
 	HandleAddDistrict(orOrg OROrg) (bool, error)
 	HandleDeleteDistrict(orOrg OROrg) error
-	HandleEditDistrict(orOrg OROrg) error
+	HandleEditDistrict(orOrg OROrg, districtId bson.ObjectId) error
 	HandleAddOrEditDistrict(orOrg OROrg) error
 
 	// Schools
-	HandleAddSchool(orOrg OROrg) error
+	HandleAddSchool(orOrg OROrg, districtIDs []bson.ObjectId) error
 	HandleDeleteSchool(orOrg OROrg, districtIDs []bson.ObjectId) error
 	HandleEditSchool(orOrg OROrg) error
 	HandleAddOrEditSchool(orOrg OROrg, districtIDs []bson.ObjectId) error
 
 	// Classes
-	HandleAddClasses(orClass []ORClass) error
+	HandleAddClasses(orClass []ORClass, districtIDs []bson.ObjectId) error
 	HandleDeleteClasses(orClassIDs []string, districtIDs []bson.ObjectId) error
 	HandleEditClass(orClass []ORClass) error
 	HandleAddOrEditClass(orClass []ORClass, districtIDs []bson.ObjectId) error
 
 	// Courses
-	HandleAddCourses(orCourse []ORCourse) error
+	HandleAddCourses(orCourse []ORCourse, districtIDs []bson.ObjectId) error
 	HandleDeleteCourses(orCourseIDs []string, districtIDs []bson.ObjectId) error
 	HandleEditCourse(orCourse []ORCourse) error
 	HandleAddOrEditCourse(orCourse []ORCourse, districtIDs []bson.ObjectId) error
 
 	// Enrollments
-	HandleAddEnrollment(orEnrollment []OREnrollment) error
+	HandleAddEnrollment(orEnrollment []OREnrollment, districtIDs []bson.ObjectId) error
 	HandleDeleteEnrollments(orEnrollment []OREnrollment, districtIDs []bson.ObjectId) error
 	HandleAddOrEditEnrollments(orEnrollment []OREnrollment, districtIDs []bson.ObjectId) error
 

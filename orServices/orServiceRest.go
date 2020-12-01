@@ -3,20 +3,12 @@ package orServices
 import (
     "fmt"
 	"github.com/MZDevinc/oneroster/models"
-	// "net/http"
-	// "io/ioutil"
-	// "errors"
 	"encoding/json"
 
-	// "net/url"
 	"github.com/MZDevinc/oneroster/oauth1"
 	"strings"
 
 	"strconv"
-	// "sync/atomic"
-	// "time"
-	// "crypto/rand"
-	// "encoding/binary"
 	"net/http"
 	"io/ioutil"
 	"github.com/globalsign/mgo/bson"
@@ -24,11 +16,14 @@ import (
 
 
 
-func ProcessAPIs(domain string, key, secret string, orProcess models.ORProcess) error {
+func ProcessAPIs(districtId bson.ObjectId, domain string, key, secret string, orProcess models.ORProcess) error {
 
 	// err := ProcessAcademicSessionsAPITest(domain, key, secret, orProcess)
 	//call orgs API
-	_, districtIDs, err := ProcessOrgsAPI(domain, key, secret, orProcess)
+	var districtIDs []bson.ObjectId
+	districtIDs = append(districtIDs, districtId)
+
+	_, err := ProcessOrgsAPI(districtIDs, domain, key, secret, orProcess)
 	if err != nil {
 		return err
 	}
@@ -64,31 +59,6 @@ func ProcessAPIs(domain string, key, secret string, orProcess models.ORProcess) 
 	}
 
 	return nil;
-}
-
-
-
-
-func ProcessAcademicSessionsAPITest(domain string, key, secret string, orProcess models.ORProcess) error {
-
-
-	var academicSessions []models.ORAcademicSessions
-	// call the api 
-	url := fmt.Sprintf("%s/ims/oneroster/v1p1/academicSessions", domain)
-
-///////***** add oauth 1 params to request *****/////	
-	
-	// consumer := NewConsumer(key, secret, url, "GET")
-	// signature, err := consumer.Sign()
-	// fmt.Println(" >>> signature: ", signature,"   err: ",err)
-
-	// using oauth1 file
-	respByte, err := Createrequest(key, secret, "GET", url)
-	if err != nil {
-		return err
-	}
-	json.Unmarshal(respByte, &academicSessions)
-    return nil
 }
 
 
@@ -164,8 +134,7 @@ func ProcessAcademicSessionsAPI(domain string, key, secret string, orProcess mod
 }
 
 
-
-func ProcessOrgsAPI(domain string, key, secret string, orProcess models.ORProcess)  ([]models.OROrg, []bson.ObjectId, error)  {
+func ProcessOrgsAPI(districtIDs []bson.ObjectId, domain string, key, secret string, orProcess models.ORProcess)  ([]models.OROrg, error)  {
 
 	var orgs []models.OROrg
 	// // call the api
@@ -173,7 +142,7 @@ func ProcessOrgsAPI(domain string, key, secret string, orProcess models.ORProces
 	offset := 0
 	hasNext := true
 	districts := []models.OROrg{}
-	var districtIDs []bson.ObjectId
+	
 	for hasNext == true {
 		url := fmt.Sprintf("%s/ims/oneroster/v1p1/orgs?limit=%s&offset=%s", domain, strconv.Itoa(limit), strconv.Itoa(offset))
 
@@ -209,22 +178,22 @@ func ProcessOrgsAPI(domain string, key, secret string, orProcess models.ORProces
 			if org.OrgType == models.ORG_TYPE_DISTRICT {
 			
 				if strings.ToLower(org.Status) == strings.ToLower(models.STATUS_TYPE_ACTIVE) {
-					err = orProcess.HandleAddOrEditDistrict(org)
+					err = orProcess.HandleEditDistrict(org, districtIDs[0])
 				}else if strings.ToLower(org.Status) == strings.ToLower(models.STATUS_TYPE_TOBEDELETED) {
 					err = orProcess.HandleDeleteDistrict(org)
 				}
 
 				if err != nil {
-					return districts, districtIDs, err
+					return districts, err
 				}
 				districts = append(districts, org)
 			} 
 		}
 		// get the mongo IDs for the district to use for edit and delete other files data
-		districtIDs, err := orProcess.GetDistrictsIDs(districts)
-		if err != nil {
-			return districts, districtIDs, err
-		}
+		// districtIDs, err := orProcess.GetDistrictsIDs(districts)
+		// if err != nil {
+		// 	return districts, districtIDs, err
+		// }
 
 		for _, org := range orgs {
 			var err error = nil
@@ -241,7 +210,7 @@ func ProcessOrgsAPI(domain string, key, secret string, orProcess models.ORProces
 				}
 
 				if err != nil {
-					return  districts,districtIDs, err
+					return  districts, err
 				}
 			}
 		}
@@ -253,7 +222,7 @@ func ProcessOrgsAPI(domain string, key, secret string, orProcess models.ORProces
 		}
 
 	}
-    return districts, districtIDs,  nil
+    return districts,  nil
 }
 
 

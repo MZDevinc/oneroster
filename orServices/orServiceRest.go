@@ -3,15 +3,11 @@ package orServices
 import (
     "fmt"
 	"github.com/MZDevinc/oneroster/models"
-	"encoding/json"
-
 	"github.com/MZDevinc/oneroster/oauth1"
-	"strings"
-
-	"strconv"
-	"net/http"
-	"io/ioutil"
 	"github.com/globalsign/mgo/bson"
+	"encoding/json"
+	"strings"
+	"strconv"
 ) 
 
 
@@ -61,9 +57,8 @@ func ProcessAPIs(districtId bson.ObjectId, domain string, key, secret string, or
 	return nil;
 }
 
-
+// get the AcademicSessions from the API and call the interface methods to Handle the response
 func ProcessAcademicSessionsAPI(domain string, key, secret string, orProcess models.ORProcess) error {
-
 
 	var academicSessions []models.ORAcademicSessions
 	// call the api 
@@ -72,16 +67,14 @@ func ProcessAcademicSessionsAPI(domain string, key, secret string, orProcess mod
 	hasNext := true
 	for hasNext == true {
 		url := fmt.Sprintf("%s/ims/oneroster/v1p1/academicSessions?limit=%s&offset=%s", domain, strconv.Itoa(limit), strconv.Itoa(offset))
-
 		
 		oneRoster := oauth1.OneRosterNew(key, secret)
 		statusCode, response, header := oneRoster.MakeRosterRequest(url)
 		totalRowsCount, _ := strconv.Atoi(header.Get("x-total-count"))
-		fmt.Println("totalRowsCount: ", totalRowsCount)
 
 		b := []byte(response)
 
-		// If status_code is 200, create array of users from response, otherwise print message and return nil
+		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
 		
 			var academicSessionsResponse models.AcademicSessionsResponse
@@ -89,11 +82,11 @@ func ProcessAcademicSessionsAPI(domain string, key, secret string, orProcess mod
 			academicSessions = academicSessionsResponse.AcademicSessions
 			
 		}else if statusCode == 401 {
-			fmt.Println("Unauthorized Request\n" + response)
+			return fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
-			fmt.Println("Not found\n" + response)
+			return fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
-			fmt.Println("Server Error\n" + response)
+			return fmt.Errorf("Server Error: %s", response)
 		} 
 
 		orAcademicSessionToEdit := []models.ORAcademicSessions{}
@@ -133,7 +126,7 @@ func ProcessAcademicSessionsAPI(domain string, key, secret string, orProcess mod
     return nil
 }
 
-
+// get the Orgs from the API and call the interface methods to Handle the response
 func ProcessOrgsAPI(districtIDs []bson.ObjectId, domain string, key, secret string, orProcess models.ORProcess)  ([]models.OROrg, error)  {
 
 	var orgs []models.OROrg
@@ -146,16 +139,13 @@ func ProcessOrgsAPI(districtIDs []bson.ObjectId, domain string, key, secret stri
 	for hasNext == true {
 		url := fmt.Sprintf("%s/ims/oneroster/v1p1/orgs?limit=%s&offset=%s", domain, strconv.Itoa(limit), strconv.Itoa(offset))
 
-
 		oneRoster := oauth1.OneRosterNew(key, secret)
 		statusCode, response, header := oneRoster.MakeRosterRequest(url)
 		totalRowsCount, _ := strconv.Atoi(header.Get("x-total-count"))
-		fmt.Println("totalRowsCount: ", totalRowsCount)
 		
-		fmt.Println(" >>>>>>>>>>> statusCode: ",statusCode) 
 		b := []byte(response)
 
-		// If status_code is 200, create array of users from response, otherwise print message and return nil
+		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
 		
 			var orgsResponse models.OrgsResponse
@@ -163,16 +153,14 @@ func ProcessOrgsAPI(districtIDs []bson.ObjectId, domain string, key, secret stri
 			orgs = orgsResponse.Orgs
 			
 		}else if statusCode == 401 {
-			fmt.Println("Unauthorized Request\n" + response)
+			return districts, fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
-			fmt.Println("Not found\n" + response)
+			return districts, fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
-			fmt.Println("Server Error\n" + response)
+			return districts, fmt.Errorf("Server Error: %s", response)
 		} 
 
-		fmt.Println(">>> org from API response : ", len(orgs))
-
-		
+		// Handle the districts
 		for _, org := range orgs {
 			var err error = nil
 			if org.OrgType == models.ORG_TYPE_DISTRICT {
@@ -189,12 +177,8 @@ func ProcessOrgsAPI(districtIDs []bson.ObjectId, domain string, key, secret stri
 				districts = append(districts, org)
 			} 
 		}
-		// get the mongo IDs for the district to use for edit and delete other files data
-		// districtIDs, err := orProcess.GetDistrictsIDs(districts)
-		// if err != nil {
-		// 	return districts, districtIDs, err
-		// }
 
+		// Handle the schools
 		for _, org := range orgs {
 			var err error = nil
 			if org.OrgType == models.ORG_TYPE_SCHOOL {
@@ -225,10 +209,8 @@ func ProcessOrgsAPI(districtIDs []bson.ObjectId, domain string, key, secret stri
     return districts,  nil
 }
 
-
-
+// get the Courses from the API and call the interface methods to Handle the response
 func ProcessCoursesAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []bson.ObjectId)  error {
-
 	
 	var orCourses []models.ORCourse
 	// call the api 
@@ -242,10 +224,9 @@ func ProcessCoursesAPI(domain string, key, secret string, orProcess models.ORPro
 		oneRoster := oauth1.OneRosterNew(key, secret)
 		statusCode, response, header := oneRoster.MakeRosterRequest(url)
 		totalRowsCount, _ := strconv.Atoi(header.Get("x-total-count"))
-		fmt.Println("totalRowsCount: ", totalRowsCount)
 		b := []byte(response)
 
-		// If status_code is 200, create array of users from response, otherwise print message and return nil
+		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
 		
 			var coursesResponse models.CoursesResponse
@@ -253,11 +234,11 @@ func ProcessCoursesAPI(domain string, key, secret string, orProcess models.ORPro
 			orCourses = coursesResponse.Courses
 			
 		}else if statusCode == 401 {
-			fmt.Println("Unauthorized Request\n" + response)
+			return fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
-			fmt.Println("Not found\n" + response)
+			return fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
-			fmt.Println("Server Error\n" + response)
+			return fmt.Errorf("Server Error: %s", response)
 		} 
 
 		orCourseToEdit := []models.ORCourse{}
@@ -265,14 +246,14 @@ func ProcessCoursesAPI(domain string, key, secret string, orProcess models.ORPro
 		for _,orCourse := range orCourses {
 			orCourse.OrgSourcedId = orCourse.Org.SourcedId
 			if strings.ToLower(orCourse.Status) == strings.ToLower(models.STATUS_TYPE_ACTIVE){
-				// err = orProcess.HandleEditCourse(orCourse)
 				orCourseToEdit = append(orCourseToEdit, orCourse)
 			}else if strings.ToLower(orCourse.Status) == strings.ToLower(models.STATUS_TYPE_TOBEDELETED){
-				// err = orProcess.HandleDeleteCourse(orCourse)
 				orCoursesIDsToDelete = append(orCoursesIDsToDelete, orCourse.SourcedId)
 			}
 		
 		}
+
+		// Add or Edit Courses
 		if len(orCourseToEdit) > 0{
 			err := orProcess.HandleAddOrEditCourse(orCourseToEdit, districtIDs)
 			if err != nil {
@@ -280,6 +261,7 @@ func ProcessCoursesAPI(domain string, key, secret string, orProcess models.ORPro
 			}
 		}
 		
+		// delete Courses
 		if len(orCoursesIDsToDelete) > 0{
 			err := orProcess.HandleDeleteCourses(orCoursesIDsToDelete, districtIDs)
 			if err != nil {
@@ -295,11 +277,10 @@ func ProcessCoursesAPI(domain string, key, secret string, orProcess models.ORPro
 
 	}
 
-	
     return nil
 }
 
-
+// get the Classes from the API and call the interface methods to Handle the response
 func ProcessClassesAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []bson.ObjectId)  error {
 
 	var orClasses []models.ORClass
@@ -309,16 +290,13 @@ func ProcessClassesAPI(domain string, key, secret string, orProcess models.ORPro
 	hasNext := true
 	for hasNext == true {
 		url := fmt.Sprintf("%s/ims/oneroster/v1p1/classes?limit=%s&offset=%s", domain, strconv.Itoa(limit), strconv.Itoa(offset))
-		
-	
 
 		oneRoster := oauth1.OneRosterNew(key, secret)
 		statusCode, response, header := oneRoster.MakeRosterRequest(url)
 		totalRowsCount, _ := strconv.Atoi(header.Get("x-total-count"))
-		fmt.Println("totalRowsCount: ", totalRowsCount)
 		b := []byte(response)
 
-		// If status_code is 200, create array of users from response, otherwise print message and return nil
+		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
 		
 			var classesResponse models.ClassesResponse
@@ -326,11 +304,11 @@ func ProcessClassesAPI(domain string, key, secret string, orProcess models.ORPro
 			orClasses = classesResponse.Classes
 			
 		}else if statusCode == 401 {
-			fmt.Println("Unauthorized Request\n" + response)
+			return fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
-			fmt.Println("Not found\n" + response)
+			return fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
-			fmt.Println("Server Error\n" + response)
+			return fmt.Errorf("Server Error: %s", response)
 		} 
 		
 		orClassesToEdit := []models.ORClass{}
@@ -353,6 +331,7 @@ func ProcessClassesAPI(domain string, key, secret string, orProcess models.ORPro
 			
 		}
 
+		// Add or Edit  Classes
 		if len(orClassesToEdit) >0 {
 			err := orProcess.HandleAddOrEditClass(orClassesToEdit, districtIDs)
 			if err != nil {
@@ -360,6 +339,7 @@ func ProcessClassesAPI(domain string, key, secret string, orProcess models.ORPro
 			}
 		}
 		
+		// Delete Classes
 		if len(orClassIDsToDelete) >0 {
 			err := orProcess.HandleDeleteClasses(orClassIDsToDelete, districtIDs)
 			if err != nil {
@@ -378,6 +358,7 @@ func ProcessClassesAPI(domain string, key, secret string, orProcess models.ORPro
     return nil
 }
 
+// get the Users from the API and call the interface methods to Handle the response
 func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []bson.ObjectId)  error {
 
 	var orUsers []models.ORUser
@@ -393,7 +374,7 @@ func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProce
 		totalRowsCount, _ := strconv.Atoi(header.Get("x-total-count"))
 		b := []byte(response)
 	
-		// If status_code is 200, create array of users from response, otherwise print message and return nil
+		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
 		
 			var usersResponse models.UsersResponse
@@ -401,15 +382,13 @@ func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProce
 			orUsers = usersResponse.Users
 			
 		}else if statusCode == 401 {
-			fmt.Println("Unauthorized Request\n" + response)
+			return fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
-			fmt.Println("Not found\n" + response)
+			return fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
-			fmt.Println("Server Error\n" + response)
+			return fmt.Errorf("Server Error: %s", response)
 		} 
 		
-	
-	
 		orUsersToEdit := []models.ORUser{}
 		orUsersIDsToDelete := []string{}
 		for _,orUser := range orUsers {
@@ -444,12 +423,16 @@ func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProce
 				orUsersIDsToDelete = append(orUsersIDsToDelete, orUser.SourcedId)
 			}
 		}
+
+		// Add or Edit Users
 		if len(orUsersToEdit) >0 {
 			err := orProcess.HandleAddOrEditUsers(orUsersToEdit, districtIDs)
 			if err != nil {
 				return err
 			}
 		}
+
+		//Delete Users
 		if len(orUsersIDsToDelete) >0 {
 			err := orProcess.HandleDeleteUsers(orUsersIDsToDelete, districtIDs)
 			if err != nil {
@@ -469,7 +452,7 @@ func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProce
     return nil
 }
 
-
+// get the Enrollments from the API and call the interface methods to Handle the response
 func ProcessEntrollmentAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []bson.ObjectId)  error {
 
 	var orEnrollments []models.OREnrollment
@@ -484,11 +467,10 @@ func ProcessEntrollmentAPI(domain string, key, secret string, orProcess models.O
 		oneRoster := oauth1.OneRosterNew(key, secret)
 		statusCode, response, header := oneRoster.MakeRosterRequest(url)
 		totalRowsCount, _ := strconv.Atoi(header.Get("x-total-count"))
-		fmt.Println("totalRowsCount: ", totalRowsCount)
 
 		b := []byte(response)
 
-		// If status_code is 200, create array of users from response, otherwise print message and return nil
+		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
 		
 			var enrollmentsResponse models.EnrollmentsResponse
@@ -496,14 +478,12 @@ func ProcessEntrollmentAPI(domain string, key, secret string, orProcess models.O
 			orEnrollments = enrollmentsResponse.Enrollments
 			
 		}else if statusCode == 401 {
-			fmt.Println("Unauthorized Request\n" + response)
+			return fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
-			fmt.Println("Not found\n" + response)
+			return fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
-			fmt.Println("Server Error\n" + response)
+			return fmt.Errorf("Server Error: %s", response)
 		} 
-		
-
 			
 		orEntrollmentsToEdit := []models.OREnrollment{}
 		orEntrollmentsIDsToDelete := []models.OREnrollment{}
@@ -519,6 +499,8 @@ func ProcessEntrollmentAPI(domain string, key, secret string, orProcess models.O
 			}
 		
 		}
+
+		//Add or Edit Enrollments
 		if len(orEntrollmentsToEdit) >0 {
 			err := orProcess.HandleDeleteEnrollments(orEntrollmentsIDsToDelete, districtIDs)
 			if err != nil {
@@ -526,6 +508,7 @@ func ProcessEntrollmentAPI(domain string, key, secret string, orProcess models.O
 			}
 		}
 		
+		// Delete Enrollments
 		if len(orEntrollmentsToEdit) > 0{
 			err := orProcess.HandleAddOrEditEnrollments(orEntrollmentsToEdit, districtIDs)
 			if err != nil {
@@ -548,9 +531,9 @@ func ProcessEntrollmentAPI(domain string, key, secret string, orProcess models.O
 
 func ProcessDemographicsAPI(domain string, key, secret string, orProcess models.ORProcess)  error {
 
-	var orDemographics []models.ORDemographics
+	// var orDemographics []models.ORDemographics
 	// call the api 
-	url := fmt.Sprintf("%s/ims/oneroster/v1p1/demographics", domain)
+	// url := fmt.Sprintf("%s/ims/oneroster/v1p1/demographics", domain)
 	// client := http.DefaultClient
 	// req, err := http.NewRequest("GET", url, nil)
 	// if err != nil {
@@ -573,69 +556,17 @@ func ProcessDemographicsAPI(domain string, key, secret string, orProcess models.
 	// 	return err
 	// }
 
-	respBytes, err := Createrequest(key, secret, "GET", url)
-	if err != nil {
-		return err
-	}
+	// respBytes, err := Createrequest(key, secret, "GET", url)
+	// if err != nil {
+	// 	return err
+	// }
 
-	json.Unmarshal(respBytes, &orDemographics)
+	// json.Unmarshal(respBytes, &orDemographics)
 
 	// add, edit and delete orDemographics code  (we don't use it right now, maybe later we'll need it )
-	fmt.Println(">> ProcessDemographics")
+	// fmt.Println(">> ProcessDemographics: ", ur)
 	
 
     return nil
 }
-
-
-func Createrequest(key, secret, method, url string) ([]byte, error){
-	oauthParams := oauth1.OAuthParameters{}
-	oauthParams.ConsumerKey = &key
-	oauthParams.ConsumerSecret = &secret
-	// token := ""
-	// oauthParams.Token = &token
-	v := "1.0"
-	oauthParams.Version = &v
-	sig := oauth1.GetHMACSigner(secret, "")
-	oauthParams.Signer = sig
-	signerMethod := oauthParams.Signer.GetMethod()
-	oauthParams.Method = &signerMethod
-	oauthParams.Build()
-	// signature, err := oauthParams.GetOAuthSignature("GET", url, nil)
-	// fmt.Println(" >>> signature2: ", signature,"   err2: ",err)
-
-	return oauthParams.DoOauthRequestTest(method, url, nil)
-}
-
-
-
-
-func Createrequest3(applicationId, token, method, url string) ([]byte, error){
-
-
-	req, err := http.NewRequest("GET", "https://certs-nj-v2.oneroster.com/"+applicationId+"/ims/oneroster/v1p1/orgs?limit=100&offset=0&orderBy=asc", nil)
-	if err != nil {
-		// handle err
-	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token)
-	fmt.Println(" Header Authorization 1: ", req.Header.Get("Authorization"))
-	
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		// handle err
-		fmt.Println(">>>> err test direct ",err)
-	}
-	defer resp.Body.Close()
-
-	fmt.Println("=====> test direct resp.Body: ",resp.Body, "   >>status: ", resp.Status,"  resp", resp)
-	// body, err := ioutil.ReadAll(resp.Body)
-	body, err := ioutil.ReadAll(resp.Body)
-	fmt.Println("=====> test direct resp.Body string : ",string(body))
-	return body, nil
-	// return oauthParams.DoOauthRequestTest(method, url, nil, signature)
-}
-
-/////// Oauth 1 /////////
-
 

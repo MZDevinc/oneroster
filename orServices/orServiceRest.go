@@ -1,4 +1,4 @@
-package orServices
+package orservices
 
 import (
 	"encoding/json"
@@ -10,12 +10,13 @@ import (
 	"github.com/MZDevinc/oneroster/oauth1"
 )
 
-func ProcessAPIs(districtId string, domain string, key, secret string, orProcess models.ORProcess) error {
+// ProcessAPIs process APIs
+func ProcessAPIs(districtID string, domain string, key, secret string, orProcess models.ORProcess) error {
 
 	// err := ProcessAcademicSessionsAPITest(domain, key, secret, orProcess)
 	//call orgs API
 	var districtIDs []string
-	districtIDs = append(districtIDs, districtId)
+	districtIDs = append(districtIDs, districtID)
 
 	_, err := ProcessOrgsAPI(districtIDs, domain, key, secret, orProcess)
 	if err != nil {
@@ -47,7 +48,7 @@ func ProcessAPIs(districtId string, domain string, key, secret string, orProcess
 	}
 
 	//call Enrollment API
-	err = ProcessEntrollmentAPI(domain, key, secret, orProcess, districtIDs)
+	err = ProcessEnrollmentAPI(domain, key, secret, orProcess, districtIDs)
 	if err != nil {
 		return err
 	}
@@ -55,7 +56,7 @@ func ProcessAPIs(districtId string, domain string, key, secret string, orProcess
 	return nil
 }
 
-// get the AcademicSessions from the API and call the interface methods to Handle the response
+// ProcessAcademicSessionsAPI get the AcademicSessions from the API and call the interface methods to Handle the response
 func ProcessAcademicSessionsAPI(domain string, key, secret string, orProcess models.ORProcess) error {
 
 	var academicSessions []models.ORAcademicSessions
@@ -124,7 +125,7 @@ func ProcessAcademicSessionsAPI(domain string, key, secret string, orProcess mod
 	return nil
 }
 
-// get the Orgs from the API and call the interface methods to Handle the response
+// ProcessOrgsAPI get the Orgs from the API and call the interface methods to Handle the response
 func ProcessOrgsAPI(districtIDs []string, domain string, key, secret string, orProcess models.ORProcess) ([]models.OROrg, error) {
 
 	var orgs []models.OROrg
@@ -207,7 +208,7 @@ func ProcessOrgsAPI(districtIDs []string, domain string, key, secret string, orP
 	return districts, nil
 }
 
-// get the Courses from the API and call the interface methods to Handle the response
+// ProcessCoursesAPI get the Courses from the API and call the interface methods to Handle the response
 func ProcessCoursesAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []string) error {
 
 	var orCourses []models.ORCourse
@@ -277,7 +278,7 @@ func ProcessCoursesAPI(domain string, key, secret string, orProcess models.ORPro
 	return nil
 }
 
-// get the Classes from the API and call the interface methods to Handle the response
+// ProcessClassesAPI get the Classes from the API and call the interface methods to Handle the response
 func ProcessClassesAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []string) error {
 
 	var orClasses []models.ORClass
@@ -355,7 +356,7 @@ func ProcessClassesAPI(domain string, key, secret string, orProcess models.ORPro
 	return nil
 }
 
-// get the Users from the API and call the interface methods to Handle the response
+// ProcessUsersAPI get the Users from the API and call the interface methods to Handle the response
 func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []string) error {
 
 	var orUsers []models.ORUser
@@ -448,8 +449,8 @@ func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProce
 	return nil
 }
 
-// get the Enrollments from the API and call the interface methods to Handle the response
-func ProcessEntrollmentAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []string) error {
+// ProcessEnrollmentAPI get the Enrollments from the API and call the interface methods to Handle the response
+func ProcessEnrollmentAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []string) error {
 
 	var orEnrollments []models.OREnrollment
 	// call the api
@@ -522,6 +523,7 @@ func ProcessEntrollmentAPI(domain string, key, secret string, orProcess models.O
 	return nil
 }
 
+// ProcessDemographicsAPI call demographics api and pass data to handlers
 func ProcessDemographicsAPI(domain string, key, secret string, orProcess models.ORProcess) error {
 
 	// var orDemographics []models.ORDemographics

@@ -1,4 +1,4 @@
-package orServices
+package orservices
 
 import (
 	"fmt"
@@ -504,6 +504,7 @@ func ProcessClassesCSV(dirPath string, orProcess models.ORProcess, importType st
 	return nil
 }
 
+// ProcessUsersCSV process users from CSV file
 func ProcessUsersCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []string) error {
 
 	usersPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameUsers)
@@ -515,10 +516,25 @@ func ProcessUsersCSV(dirPath string, orProcess models.ORProcess, importType stri
 	defer f.Close()
 	var orUsers []models.ORUser
 
-	err = gocsv.UnmarshalFile(f, &orUsers)
-	if err != nil {
+	if err := gocsv.UnmarshalFile(f, &orUsers); err != nil {
 		return err
 	}
+
+	return ProcessUsers(orProcess, orUsers, importType, districtIDs)
+}
+
+// ProcessUsersString process users from CSV string
+func ProcessUsersString(csvStr string, orProcess models.ORProcess, importType string, districtIDs []string) error {
+	var orUsers []models.ORUser
+
+	if err := gocsv.UnmarshalString(csvStr, &orUsers); err != nil {
+		return err
+	}
+	return ProcessUsers(orProcess, orUsers, importType, districtIDs)
+}
+
+// ProcessUsers process oneroster users using oneroster process
+func ProcessUsers(orProcess models.ORProcess, orUsers []models.ORUser, importType string, districtIDs []string) error {
 	if importType == models.ImportTypeBulk {
 		err := orProcess.HandleAddUsers(orUsers, districtIDs)
 		if err != nil {
@@ -533,17 +549,15 @@ func ProcessUsersCSV(dirPath string, orProcess models.ORProcess, importType stri
 			} else if orUser.Status == models.StatusTypeToBeDeleted {
 				orUsersIDsToDelete = append(orUsersIDsToDelete, orUser.SourcedID)
 			}
-			if err != nil {
-				return err
-			}
 		}
-		err = orProcess.HandleAddOrEditUsers(orUsersToEdit, districtIDs)
-		err = orProcess.HandleDeleteUsers(orUsersIDsToDelete, districtIDs)
-		if err != nil {
+		if err := orProcess.HandleAddOrEditUsers(orUsersToEdit, districtIDs); err != nil {
+			return err
+		}
+		if err := orProcess.HandleDeleteUsers(orUsersIDsToDelete, districtIDs); err != nil {
+
 			return err
 		}
 	}
-
 	return nil
 }
 

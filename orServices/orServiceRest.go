@@ -1,22 +1,20 @@
 package orServices
 
 import (
-    "fmt"
+	"encoding/json"
+	"fmt"
+	"strconv"
+	"strings"
+
 	"github.com/MZDevinc/oneroster/models"
 	"github.com/MZDevinc/oneroster/oauth1"
-	"github.com/globalsign/mgo/bson"
-	"encoding/json"
-	"strings"
-	"strconv"
-) 
+)
 
-
-
-func ProcessAPIs(districtId bson.ObjectId, domain string, key, secret string, orProcess models.ORProcess) error {
+func ProcessAPIs(districtId string, domain string, key, secret string, orProcess models.ORProcess) error {
 
 	// err := ProcessAcademicSessionsAPITest(domain, key, secret, orProcess)
 	//call orgs API
-	var districtIDs []bson.ObjectId
+	var districtIDs []string
 	districtIDs = append(districtIDs, districtId)
 
 	_, err := ProcessOrgsAPI(districtIDs, domain, key, secret, orProcess)
@@ -54,20 +52,20 @@ func ProcessAPIs(districtId bson.ObjectId, domain string, key, secret string, or
 		return err
 	}
 
-	return nil;
+	return nil
 }
 
 // get the AcademicSessions from the API and call the interface methods to Handle the response
 func ProcessAcademicSessionsAPI(domain string, key, secret string, orProcess models.ORProcess) error {
 
 	var academicSessions []models.ORAcademicSessions
-	// call the api 
+	// call the api
 	limit := 100
 	offset := 0
 	hasNext := true
 	for hasNext == true {
 		url := fmt.Sprintf("%s/ims/oneroster/v1p1/academicSessions?limit=%s&offset=%s", domain, strconv.Itoa(limit), strconv.Itoa(offset))
-		
+
 		oneRoster := oauth1.OneRosterNew(key, secret)
 		statusCode, response, header := oneRoster.MakeRosterRequest(url)
 		totalRowsCount, _ := strconv.Atoi(header.Get("x-total-count"))
@@ -76,58 +74,58 @@ func ProcessAcademicSessionsAPI(domain string, key, secret string, orProcess mod
 
 		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
-		
+
 			var academicSessionsResponse models.AcademicSessionsResponse
 			json.Unmarshal(b, &academicSessionsResponse)
 			academicSessions = academicSessionsResponse.AcademicSessions
-			
-		}else if statusCode == 401 {
+
+		} else if statusCode == 401 {
 			return fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
 			return fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
 			return fmt.Errorf("Server Error: %s", response)
-		} 
+		}
 
 		orAcademicSessionToEdit := []models.ORAcademicSessions{}
 		orAcademicSessionIDsToDelete := []string{}
-		for _,orAcademicSession := range academicSessions {
-			orAcademicSession.ParentSourcedId = orAcademicSession.Parent.SourcedId
-			if strings.ToLower(orAcademicSession.Status) == strings.ToLower(models.STATUS_TYPE_ACTIVE){
+		for _, orAcademicSession := range academicSessions {
+			orAcademicSession.ParentSourcedID = orAcademicSession.Parent.SourcedID
+			if strings.ToLower(orAcademicSession.Status) == strings.ToLower(models.StatusTypeActive) {
 				orAcademicSessionToEdit = append(orAcademicSessionToEdit, orAcademicSession)
-			}else if strings.ToLower(orAcademicSession.Status) == strings.ToLower(models.STATUS_TYPE_TOBEDELETED){
-				orAcademicSessionIDsToDelete = append(orAcademicSessionIDsToDelete, orAcademicSession.SourcedId)
+			} else if strings.ToLower(orAcademicSession.Status) == strings.ToLower(models.StatusTypeToBeDeleted) {
+				orAcademicSessionIDsToDelete = append(orAcademicSessionIDsToDelete, orAcademicSession.SourcedID)
 			}
 		}
-		
+
 		// Add or Edit AcademicSessions
-		if len(orAcademicSessionToEdit) >0 {
+		if len(orAcademicSessionToEdit) > 0 {
 			err := orProcess.HandleAddOrEditAcademicSessions(orAcademicSessionToEdit)
 			if err != nil {
 				return err
 			}
-		}	
+		}
 		// Delete AcademicSessions
-		if len(orAcademicSessionIDsToDelete) >0 {
+		if len(orAcademicSessionIDsToDelete) > 0 {
 			err := orProcess.HandleDeleteAcademicSessions(orAcademicSessionIDsToDelete)
 			if err != nil {
 				return err
 			}
-		}	
+		}
 
-		if totalRowsCount > (offset+limit) {
-			offset = offset+ 100
-		}else {
+		if totalRowsCount > (offset + limit) {
+			offset = offset + 100
+		} else {
 			hasNext = false
 			break
 		}
 
 	}
-    return nil
+	return nil
 }
 
 // get the Orgs from the API and call the interface methods to Handle the response
-func ProcessOrgsAPI(districtIDs []bson.ObjectId, domain string, key, secret string, orProcess models.ORProcess)  ([]models.OROrg, error)  {
+func ProcessOrgsAPI(districtIDs []string, domain string, key, secret string, orProcess models.ORProcess) ([]models.OROrg, error) {
 
 	var orgs []models.OROrg
 	// // call the api
@@ -135,39 +133,39 @@ func ProcessOrgsAPI(districtIDs []bson.ObjectId, domain string, key, secret stri
 	offset := 0
 	hasNext := true
 	districts := []models.OROrg{}
-	
+
 	for hasNext == true {
 		url := fmt.Sprintf("%s/ims/oneroster/v1p1/orgs?limit=%s&offset=%s", domain, strconv.Itoa(limit), strconv.Itoa(offset))
 
 		oneRoster := oauth1.OneRosterNew(key, secret)
 		statusCode, response, header := oneRoster.MakeRosterRequest(url)
 		totalRowsCount, _ := strconv.Atoi(header.Get("x-total-count"))
-		
+
 		b := []byte(response)
 
 		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
-		
+
 			var orgsResponse models.OrgsResponse
 			json.Unmarshal(b, &orgsResponse)
 			orgs = orgsResponse.Orgs
-			
-		}else if statusCode == 401 {
+
+		} else if statusCode == 401 {
 			return districts, fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
 			return districts, fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
 			return districts, fmt.Errorf("Server Error: %s", response)
-		} 
+		}
 
 		// Handle the districts
 		for _, org := range orgs {
 			var err error = nil
-			if org.OrgType == models.ORG_TYPE_DISTRICT {
-			
-				if strings.ToLower(org.Status) == strings.ToLower(models.STATUS_TYPE_ACTIVE) {
+			if org.OrgType == models.OrgTypeDistrict {
+
+				if strings.ToLower(org.Status) == strings.ToLower(models.StatusTypeActive) {
 					err = orProcess.HandleEditDistrict(org, districtIDs[0])
-				}else if strings.ToLower(org.Status) == strings.ToLower(models.STATUS_TYPE_TOBEDELETED) {
+				} else if strings.ToLower(org.Status) == strings.ToLower(models.StatusTypeToBeDeleted) {
 					err = orProcess.HandleDeleteDistrict(org)
 				}
 
@@ -175,52 +173,51 @@ func ProcessOrgsAPI(districtIDs []bson.ObjectId, domain string, key, secret stri
 					return districts, err
 				}
 				districts = append(districts, org)
-			} 
+			}
 		}
 
 		// Handle the schools
 		for _, org := range orgs {
 			var err error = nil
-			if org.OrgType == models.ORG_TYPE_SCHOOL {
-				org.ParentSourcedId = org.Parent.SourcedId
-				if org.ParentSourcedId == "" {
-					org.ParentSourcedId = districts[0].SourcedId
+			if org.OrgType == models.OrgTypeSchool {
+				org.ParentSourcedID = org.Parent.SourcedID
+				if org.ParentSourcedID == "" {
+					org.ParentSourcedID = districts[0].SourcedID
 				}
 
-				if strings.ToLower(org.Status) == strings.ToLower(models.STATUS_TYPE_ACTIVE){
+				if strings.ToLower(org.Status) == strings.ToLower(models.StatusTypeActive) {
 					err = orProcess.HandleAddOrEditSchool(org, districtIDs)
-				}else if strings.ToLower(org.Status) == strings.ToLower(models.STATUS_TYPE_TOBEDELETED){
+				} else if strings.ToLower(org.Status) == strings.ToLower(models.StatusTypeToBeDeleted) {
 					err = orProcess.HandleDeleteSchool(org, districtIDs)
 				}
 
 				if err != nil {
-					return  districts, err
+					return districts, err
 				}
 			}
 		}
-		if totalRowsCount > (offset+limit) {
-			offset = offset+ 100
-		}else {
+		if totalRowsCount > (offset + limit) {
+			offset = offset + 100
+		} else {
 			hasNext = false
 			break
 		}
 
 	}
-    return districts,  nil
+	return districts, nil
 }
 
 // get the Courses from the API and call the interface methods to Handle the response
-func ProcessCoursesAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []bson.ObjectId)  error {
-	
+func ProcessCoursesAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []string) error {
+
 	var orCourses []models.ORCourse
-	// call the api 
+	// call the api
 	limit := 100
 	offset := 0
 	hasNext := true
 	for hasNext == true {
 		url := fmt.Sprintf("%s/ims/oneroster/v1p1/courses?limit=%s&offset=%s", domain, strconv.Itoa(limit), strconv.Itoa(offset))
 
-	
 		oneRoster := oauth1.OneRosterNew(key, secret)
 		statusCode, response, header := oneRoster.MakeRosterRequest(url)
 		totalRowsCount, _ := strconv.Atoi(header.Get("x-total-count"))
@@ -228,63 +225,63 @@ func ProcessCoursesAPI(domain string, key, secret string, orProcess models.ORPro
 
 		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
-		
+
 			var coursesResponse models.CoursesResponse
 			json.Unmarshal(b, &coursesResponse)
 			orCourses = coursesResponse.Courses
-			
-		}else if statusCode == 401 {
+
+		} else if statusCode == 401 {
 			return fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
 			return fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
 			return fmt.Errorf("Server Error: %s", response)
-		} 
+		}
 
 		orCourseToEdit := []models.ORCourse{}
 		orCoursesIDsToDelete := []string{}
-		for _,orCourse := range orCourses {
-			orCourse.OrgSourcedId = orCourse.Org.SourcedId
-			if strings.ToLower(orCourse.Status) == strings.ToLower(models.STATUS_TYPE_ACTIVE){
+		for _, orCourse := range orCourses {
+			orCourse.OrgSourcedID = orCourse.Org.SourcedID
+			if strings.ToLower(orCourse.Status) == strings.ToLower(models.StatusTypeActive) {
 				orCourseToEdit = append(orCourseToEdit, orCourse)
-			}else if strings.ToLower(orCourse.Status) == strings.ToLower(models.STATUS_TYPE_TOBEDELETED){
-				orCoursesIDsToDelete = append(orCoursesIDsToDelete, orCourse.SourcedId)
+			} else if strings.ToLower(orCourse.Status) == strings.ToLower(models.StatusTypeToBeDeleted) {
+				orCoursesIDsToDelete = append(orCoursesIDsToDelete, orCourse.SourcedID)
 			}
-		
+
 		}
 
 		// Add or Edit Courses
-		if len(orCourseToEdit) > 0{
+		if len(orCourseToEdit) > 0 {
 			err := orProcess.HandleAddOrEditCourse(orCourseToEdit, districtIDs)
 			if err != nil {
 				return err
 			}
 		}
-		
+
 		// delete Courses
-		if len(orCoursesIDsToDelete) > 0{
+		if len(orCoursesIDsToDelete) > 0 {
 			err := orProcess.HandleDeleteCourses(orCoursesIDsToDelete, districtIDs)
 			if err != nil {
 				return err
 			}
 		}
-		if totalRowsCount > (offset+limit) {
-			offset = offset+ 100
-		}else {
+		if totalRowsCount > (offset + limit) {
+			offset = offset + 100
+		} else {
 			hasNext = false
 			break
 		}
 
 	}
 
-    return nil
+	return nil
 }
 
 // get the Classes from the API and call the interface methods to Handle the response
-func ProcessClassesAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []bson.ObjectId)  error {
+func ProcessClassesAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []string) error {
 
 	var orClasses []models.ORClass
-	// call the api 
+	// call the api
 	limit := 100
 	offset := 0
 	hasNext := true
@@ -298,71 +295,71 @@ func ProcessClassesAPI(domain string, key, secret string, orProcess models.ORPro
 
 		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
-		
+
 			var classesResponse models.ClassesResponse
 			json.Unmarshal(b, &classesResponse)
 			orClasses = classesResponse.Classes
-			
-		}else if statusCode == 401 {
+
+		} else if statusCode == 401 {
 			return fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
 			return fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
 			return fmt.Errorf("Server Error: %s", response)
-		} 
-		
+		}
+
 		orClassesToEdit := []models.ORClass{}
 		orClassIDsToDelete := []string{}
-		for _,orClass := range orClasses {
-			orClass.SchoolSourcedId = orClass.School.SourcedId
-			orClass.CourseSourcedId = orClass.Course.SourcedId
+		for _, orClass := range orClasses {
+			orClass.SchoolSourcedID = orClass.School.SourcedID
+			orClass.CourseSourcedID = orClass.Course.SourcedID
 			termsIds := []string{}
 			for _, term := range orClass.Terms {
-				termsIds = append(termsIds, term.SourcedId)
+				termsIds = append(termsIds, term.SourcedID)
 			}
 			termsIdsString := strings.Join(termsIds, ",")
 			orClass.TermSourcedIds = termsIdsString
 
-			if strings.ToLower(orClass.Status) == strings.ToLower(models.STATUS_TYPE_ACTIVE){
+			if strings.ToLower(orClass.Status) == strings.ToLower(models.StatusTypeActive) {
 				orClassesToEdit = append(orClassesToEdit, orClass)
-			}else if strings.ToLower(orClass.Status) == strings.ToLower(models.STATUS_TYPE_TOBEDELETED){
-				orClassIDsToDelete = append(orClassIDsToDelete, orClass.SourcedId)
+			} else if strings.ToLower(orClass.Status) == strings.ToLower(models.StatusTypeToBeDeleted) {
+				orClassIDsToDelete = append(orClassIDsToDelete, orClass.SourcedID)
 			}
-			
+
 		}
 
 		// Add or Edit  Classes
-		if len(orClassesToEdit) >0 {
+		if len(orClassesToEdit) > 0 {
 			err := orProcess.HandleAddOrEditClass(orClassesToEdit, districtIDs)
 			if err != nil {
 				return err
 			}
 		}
-		
+
 		// Delete Classes
-		if len(orClassIDsToDelete) >0 {
+		if len(orClassIDsToDelete) > 0 {
 			err := orProcess.HandleDeleteClasses(orClassIDsToDelete, districtIDs)
 			if err != nil {
 				return err
 			}
 		}
-		if totalRowsCount > (offset+limit) {
-			offset = offset+ 100
-		}else {
+		if totalRowsCount > (offset + limit) {
+			offset = offset + 100
+		} else {
 			hasNext = false
 			break
 		}
 
 	}
-	
-    return nil
+
+	return nil
 }
 
 // get the Users from the API and call the interface methods to Handle the response
-func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []bson.ObjectId)  error {
+func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []string) error {
 
 	var orUsers []models.ORUser
-	// call the api 
+	// call the api
 	limit := 100
 	offset := 0
 	hasNext := true
@@ -373,34 +370,34 @@ func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProce
 		statusCode, response, header := oneRoster.MakeRosterRequest(url)
 		totalRowsCount, _ := strconv.Atoi(header.Get("x-total-count"))
 		b := []byte(response)
-	
+
 		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
-		
+
 			var usersResponse models.UsersResponse
 			json.Unmarshal(b, &usersResponse)
 			orUsers = usersResponse.Users
-			
-		}else if statusCode == 401 {
+
+		} else if statusCode == 401 {
 			return fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
 			return fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
 			return fmt.Errorf("Server Error: %s", response)
-		} 
-		
+		}
+
 		orUsersToEdit := []models.ORUser{}
 		orUsersIDsToDelete := []string{}
-		for _,orUser := range orUsers {
-	
-			// collect orgsId and add it in orUser.OrgSourcedIds 
+		for _, orUser := range orUsers {
+
+			// collect orgsId and add it in orUser.OrgSourcedIds
 			orgsIds := []string{}
 			for _, org := range orUser.Orgs {
-				orgsIds = append(orgsIds, org.SourcedId)
+				orgsIds = append(orgsIds, org.SourcedID)
 			}
 			orgsIdsString := strings.Join(orgsIds, ",")
 			orUser.OrgSourcedIds = orgsIdsString
-	
+
 			// collect usersids and add it in orUser.UserIds
 			userIds := []string{}
 			for _, iden := range orUser.UserIdsIdentifer {
@@ -408,24 +405,24 @@ func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProce
 			}
 			userIdsString := strings.Join(userIds, ",")
 			orUser.UserIds = userIdsString
-	
+
 			// collect agentSourcedIds and add it in orUser.AgentSourcedIds
 			agentSourcedIds := []string{}
 			for _, agent := range orUser.Agents {
-				agentSourcedIds = append(agentSourcedIds, agent.SourcedId)
+				agentSourcedIds = append(agentSourcedIds, agent.SourcedID)
 			}
 			agentSourcedIdsString := strings.Join(agentSourcedIds, ",")
 			orUser.AgentSourcedIds = agentSourcedIdsString
-	
-			if strings.ToLower(orUser.Status) == strings.ToLower(models.STATUS_TYPE_ACTIVE){
+
+			if strings.ToLower(orUser.Status) == strings.ToLower(models.StatusTypeActive) {
 				orUsersToEdit = append(orUsersToEdit, orUser)
-			}else if strings.ToLower(orUser.Status) == strings.ToLower(models.STATUS_TYPE_TOBEDELETED){
-				orUsersIDsToDelete = append(orUsersIDsToDelete, orUser.SourcedId)
+			} else if strings.ToLower(orUser.Status) == strings.ToLower(models.StatusTypeToBeDeleted) {
+				orUsersIDsToDelete = append(orUsersIDsToDelete, orUser.SourcedID)
 			}
 		}
 
 		// Add or Edit Users
-		if len(orUsersToEdit) >0 {
+		if len(orUsersToEdit) > 0 {
 			err := orProcess.HandleAddOrEditUsers(orUsersToEdit, districtIDs)
 			if err != nil {
 				return err
@@ -433,36 +430,34 @@ func ProcessUsersAPI(domain string, key, secret string, orProcess models.ORProce
 		}
 
 		//Delete Users
-		if len(orUsersIDsToDelete) >0 {
+		if len(orUsersIDsToDelete) > 0 {
 			err := orProcess.HandleDeleteUsers(orUsersIDsToDelete, districtIDs)
 			if err != nil {
 				return err
 			}
 		}
-		if totalRowsCount > (offset+limit) {
-			offset = offset+ 100
-		}else {
+		if totalRowsCount > (offset + limit) {
+			offset = offset + 100
+		} else {
 			hasNext = false
 			break
 		}
-	
+
 	}
 
-
-    return nil
+	return nil
 }
 
 // get the Enrollments from the API and call the interface methods to Handle the response
-func ProcessEntrollmentAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []bson.ObjectId)  error {
+func ProcessEntrollmentAPI(domain string, key, secret string, orProcess models.ORProcess, districtIDs []string) error {
 
 	var orEnrollments []models.OREnrollment
-	// call the api 
+	// call the api
 	limit := 100
 	offset := 0
 	hasNext := true
 	for hasNext == true {
 		url := fmt.Sprintf("%s/ims/oneroster/v1p1/enrollments?limit=%s&offset=%s", domain, strconv.Itoa(limit), strconv.Itoa(offset))
-			
 
 		oneRoster := oauth1.OneRosterNew(key, secret)
 		statusCode, response, header := oneRoster.MakeRosterRequest(url)
@@ -472,67 +467,65 @@ func ProcessEntrollmentAPI(domain string, key, secret string, orProcess models.O
 
 		// If status_code is 200, create array of users from response, otherwise return error
 		if statusCode == 200 {
-		
+
 			var enrollmentsResponse models.EnrollmentsResponse
 			json.Unmarshal(b, &enrollmentsResponse)
 			orEnrollments = enrollmentsResponse.Enrollments
-			
-		}else if statusCode == 401 {
+
+		} else if statusCode == 401 {
 			return fmt.Errorf("Unauthorized Request: %s", response)
 		} else if statusCode == 404 {
 			return fmt.Errorf("Not found: %s", response)
 		} else if statusCode == 500 {
 			return fmt.Errorf("Server Error: %s", response)
-		} 
-			
+		}
+
 		orEntrollmentsToEdit := []models.OREnrollment{}
 		orEntrollmentsIDsToDelete := []models.OREnrollment{}
-		for _,orEnrollment := range orEnrollments {
-			orEnrollment.ClassSourcedId = orEnrollment.Class.SourcedId
-			orEnrollment.SchoolSourcedId = orEnrollment.School.SourcedId
-			orEnrollment.UserSourcedId = orEnrollment.User.SourcedId
+		for _, orEnrollment := range orEnrollments {
+			orEnrollment.ClassSourcedID = orEnrollment.Class.SourcedID
+			orEnrollment.SchoolSourcedID = orEnrollment.School.SourcedID
+			orEnrollment.UserSourcedID = orEnrollment.User.SourcedID
 
-			if strings.ToLower(orEnrollment.Status) == strings.ToLower(models.STATUS_TYPE_ACTIVE){
+			if strings.ToLower(orEnrollment.Status) == strings.ToLower(models.StatusTypeActive) {
 				orEntrollmentsToEdit = append(orEntrollmentsToEdit, orEnrollment)
-			}else if strings.ToLower(orEnrollment.Status) == strings.ToLower(models.STATUS_TYPE_TOBEDELETED) {
+			} else if strings.ToLower(orEnrollment.Status) == strings.ToLower(models.StatusTypeToBeDeleted) {
 				orEntrollmentsIDsToDelete = append(orEntrollmentsIDsToDelete, orEnrollment)
 			}
-		
+
 		}
 
 		//Add or Edit Enrollments
-		if len(orEntrollmentsToEdit) >0 {
+		if len(orEntrollmentsToEdit) > 0 {
 			err := orProcess.HandleDeleteEnrollments(orEntrollmentsIDsToDelete, districtIDs)
 			if err != nil {
 				return err
 			}
 		}
-		
+
 		// Delete Enrollments
-		if len(orEntrollmentsToEdit) > 0{
+		if len(orEntrollmentsToEdit) > 0 {
 			err := orProcess.HandleAddOrEditEnrollments(orEntrollmentsToEdit, districtIDs)
 			if err != nil {
 				return err
 			}
 		}
 
-		if totalRowsCount > (offset+limit) {
-			offset = offset+ 100
-		}else {
+		if totalRowsCount > (offset + limit) {
+			offset = offset + 100
+		} else {
 			hasNext = false
 			break
 		}
 	}
 
-	
-
-    return nil
+	return nil
 }
 
-func ProcessDemographicsAPI(domain string, key, secret string, orProcess models.ORProcess)  error {
+func ProcessDemographicsAPI(domain string, key, secret string, orProcess models.ORProcess) error {
 
 	// var orDemographics []models.ORDemographics
-	// call the api 
+	// call the api
 	// url := fmt.Sprintf("%s/ims/oneroster/v1p1/demographics", domain)
 	// client := http.DefaultClient
 	// req, err := http.NewRequest("GET", url, nil)
@@ -565,8 +558,6 @@ func ProcessDemographicsAPI(domain string, key, secret string, orProcess models.
 
 	// add, edit and delete orDemographics code  (we don't use it right now, maybe later we'll need it )
 	// fmt.Println(">> ProcessDemographics: ", ur)
-	
 
-    return nil
+	return nil
 }
-

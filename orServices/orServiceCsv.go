@@ -1,30 +1,29 @@
 package orServices
 
 import (
-    "fmt"
+	"fmt"
 	"os"
+
 	"github.com/MZDevinc/oneroster/models"
+
 	// "github.com/jszwec/csvutil"
-	"github.com/gocarina/gocsv"
 	"strings"
-	"github.com/globalsign/mgo/bson"
 
-) 
+	"github.com/gocarina/gocsv"
+)
 
+func ProcessFiles(dirPath string, orProcess models.ORProcess) error {
 
-
-func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
-
-	// read the manifest csv file 
+	// read the manifest csv file
 	manifestPath := fmt.Sprintf("%s/manifest.csv", dirPath)
 	manifestRows, err := ReadManifestCSV(manifestPath)
 	if err != nil {
-		fmt.Println(">> err ReadManifestCsv: ",err)
+		fmt.Println(">> err ReadManifestCsv: ", err)
 		return err
 	}
 
 	var orgDistrict []models.OROrg
-	var districtIDs []bson.ObjectId
+	var districtIDs []string
 
 	// put the manifest data into   --- map[propertyName] = propertyValue---
 	mainfestTable := make(map[string]string)
@@ -32,77 +31,77 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 		switch manifestRow.PropertyName {
 
 		// class sourceName
-		case models.MANIFEST_PRO_SOURCE_SYSTEMNAME:
-			mainfestTable[models.MANIFEST_PRO_SOURCE_SYSTEMNAME] = manifestRow.Value
+		case models.ManifestProSourceSystemName:
+			mainfestTable[models.ManifestProSourceSystemName] = manifestRow.Value
 
-		// Acadimic Sessions		
-		case models.MANIFEST_PRO_FILE_ACADEMICSESSIONS:
-			mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS] = manifestRow.Value
-		
+		// Acadimic Sessions
+		case models.ManifestProFileAcademicSessions:
+			mainfestTable[models.ManifestProFileAcademicSessions] = manifestRow.Value
+
 		// classes
-		case models.MANIFEST_PRO_FILE_CLASSES:
-			mainfestTable[models.MANIFEST_PRO_FILE_CLASSES] = manifestRow.Value
-		
-		// courses	
-		case models.MANIFEST_PRO_FILE_COURSES:
-			mainfestTable[models.MANIFEST_PRO_FILE_COURSES] = manifestRow.Value
-		
+		case models.ManifestProFileClasses:
+			mainfestTable[models.ManifestProFileClasses] = manifestRow.Value
+
+		// courses
+		case models.ManifestProFileCourses:
+			mainfestTable[models.ManifestProFileCourses] = manifestRow.Value
+
 		// Enrollments
-		case models.MANIFEST_PRO_FILE_ENROLLMENTS:
-			mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS] = manifestRow.Value
-	
+		case models.ManifestProFileEnrollments:
+			mainfestTable[models.ManifestProFileEnrollments] = manifestRow.Value
+
 		// Orgs
-		case models.MANIFEST_PRO_FILE_ORGS:
-			mainfestTable[models.MANIFEST_PRO_FILE_ORGS] = manifestRow.Value
-		
-		// Users	
-		case models.MANIFEST_PRO_FILE_USERS:
-			mainfestTable[models.MANIFEST_PRO_FILE_USERS] = manifestRow.Value
+		case models.ManifestProFileOrgs:
+			mainfestTable[models.ManifestProFileOrgs] = manifestRow.Value
+
+		// Users
+		case models.ManifestProFileUsers:
+			mainfestTable[models.ManifestProFileUsers] = manifestRow.Value
 
 		// Demographics ( we don't save it in Edgems, maybe we will need it later )
-		case models.MANIFEST_PRO_FILE_DEMOGRAPHICS:
-			mainfestTable[models.MANIFEST_PRO_FILE_DEMOGRAPHICS] = manifestRow.Value
+		case models.ManifestProFileDemographics:
+			mainfestTable[models.ManifestProFileDemographics] = manifestRow.Value
 
-		// we don't read the resources and results, we don't need it until now 
+			// we don't read the resources and results, we don't need it until now
 
-		// case models.MANIFEST_PRO_FILE_RESULTS:
+			// case models.MANIFEST_PRO_FILE_RESULTS:
 			// mainfestTable[models.MANIFEST_PRO_FILE_RESULTS] = manifestRow.Value
-		// case models.MANIFEST_PRO_FILE_RESOURCES:
+			// case models.MANIFEST_PRO_FILE_RESOURCES:
 			// mainfestTable[models.MANIFEST_PRO_FILE_RESOURCES] = manifestRow.Value
-		// case models.MANIFEST_PRO_FILE_LINEITEMS:
+			// case models.MANIFEST_PRO_FILE_LINEITEMS:
 			// mainfestTable[models.MANIFEST_PRO_FILE_LINEITEMS] = manifestRow.Value
-		// case models.MANIFEST_PRO_FILE_COURSERESOURCES:
+			// case models.MANIFEST_PRO_FILE_COURSERESOURCES:
 			// mainfestTable[models.MANIFEST_PRO_FILE_COURSERESOURCES] = manifestRow.Value
-		// case models.MANIFEST_PRO_FILE_CLASSRESOURCES:
+			// case models.MANIFEST_PRO_FILE_CLASSRESOURCES:
 			// mainfestTable[models.MANIFEST_PRO_FILE_CLASSRESOURCES] = manifestRow.Value
-		// case models.MANIFEST_PRO_FILE_CATEGORIES:
+			// case models.MANIFEST_PRO_FILE_CATEGORIES:
 			// mainfestTable[models.MANIFEST_PRO_FILE_CATEGORIES] = manifestRow.Value
 		}
-	
+
 	}
 
-	// the files should be readed in order 
+	// the files should be readed in order
 	//process Ditricts and schools
-	if mainfestTable[models.MANIFEST_PRO_FILE_ORGS] != models.IMPORT_TYPE_ABSENT {
+	if mainfestTable[models.ManifestProFileOrgs] != models.ImportTypeAbsent {
 		doRollback := false
-		if strings.Contains(strings.ToLower(mainfestTable[models.MANIFEST_PRO_SOURCE_SYSTEMNAME]),"classlink"){
-			orgDistrict, districtIDs, doRollback, err = ProcessOrgsClassLinkCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ORGS])
+		if strings.Contains(strings.ToLower(mainfestTable[models.ManifestProSourceSystemName]), "classlink") {
+			orgDistrict, districtIDs, doRollback, err = ProcessOrgsClassLinkCSV(dirPath, orProcess, mainfestTable[models.ManifestProFileOrgs])
 		} else {
-			orgDistrict, districtIDs, doRollback, err = ProcessOrgsCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ORGS])
+			orgDistrict, districtIDs, doRollback, err = ProcessOrgsCSV(dirPath, orProcess, mainfestTable[models.ManifestProFileOrgs])
 		}
-		
+
 		if err != nil {
 			if doRollback {
 				err = orProcess.RollBackOneRoster(orgDistrict)
-			} 
+			}
 			return err
 		}
 	}
 	//process Courses
-	if mainfestTable[models.MANIFEST_PRO_FILE_COURSES] != models.IMPORT_TYPE_ABSENT {
-		err = ProcessCoursesCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_COURSES], districtIDs)
+	if mainfestTable[models.ManifestProFileCourses] != models.ImportTypeAbsent {
+		err = ProcessCoursesCSV(dirPath, orProcess, mainfestTable[models.ManifestProFileCourses], districtIDs)
 		if err != nil {
-			if mainfestTable[models.MANIFEST_PRO_FILE_COURSES] != models.IMPORT_TYPE_BULK{
+			if mainfestTable[models.ManifestProFileCourses] != models.ImportTypeBulk {
 				err = orProcess.RollBackOneRoster(orgDistrict)
 			}
 			return err
@@ -110,20 +109,20 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	}
 
 	//process Academic Session
-	if mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS] != models.IMPORT_TYPE_ABSENT {
-		err = ProcessAcademicSessionsCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS])
+	if mainfestTable[models.ManifestProFileAcademicSessions] != models.ImportTypeAbsent {
+		err = ProcessAcademicSessionsCSV(dirPath, orProcess, mainfestTable[models.ManifestProFileAcademicSessions])
 		if err != nil {
-			if mainfestTable[models.MANIFEST_PRO_FILE_ACADEMICSESSIONS] != models.IMPORT_TYPE_BULK{
+			if mainfestTable[models.ManifestProFileAcademicSessions] != models.ImportTypeBulk {
 				err = orProcess.RollBackOneRoster(orgDistrict)
 			}
 			return err
 		}
 	}
 	//process Classes
-	if mainfestTable[models.MANIFEST_PRO_FILE_CLASSES] != models.IMPORT_TYPE_ABSENT {
-		err = ProcessClassesCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_CLASSES], districtIDs)
+	if mainfestTable[models.ManifestProFileClasses] != models.ImportTypeAbsent {
+		err = ProcessClassesCSV(dirPath, orProcess, mainfestTable[models.ManifestProFileClasses], districtIDs)
 		if err != nil {
-			if mainfestTable[models.MANIFEST_PRO_FILE_CLASSES] != models.IMPORT_TYPE_BULK{
+			if mainfestTable[models.ManifestProFileClasses] != models.ImportTypeBulk {
 				err = orProcess.RollBackOneRoster(orgDistrict)
 			}
 			return err
@@ -131,10 +130,10 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	}
 
 	//process Users
-	if mainfestTable[models.MANIFEST_PRO_FILE_USERS] != models.IMPORT_TYPE_ABSENT {
-		err = ProcessUsersCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_USERS], districtIDs)
+	if mainfestTable[models.ManifestProFileUsers] != models.ImportTypeAbsent {
+		err = ProcessUsersCSV(dirPath, orProcess, mainfestTable[models.ManifestProFileUsers], districtIDs)
 		if err != nil {
-			if mainfestTable[models.MANIFEST_PRO_FILE_USERS] != models.IMPORT_TYPE_BULK{
+			if mainfestTable[models.ManifestProFileUsers] != models.ImportTypeBulk {
 				err = orProcess.RollBackOneRoster(orgDistrict)
 			}
 			return err
@@ -142,10 +141,10 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	}
 
 	//process User Entrollments
-	if mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS] != models.IMPORT_TYPE_ABSENT {
-		err = ProcessEntrollmentCSV(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS], districtIDs)
+	if mainfestTable[models.ManifestProFileEnrollments] != models.ImportTypeAbsent {
+		err = ProcessEntrollmentCSV(dirPath, orProcess, mainfestTable[models.ManifestProFileEnrollments], districtIDs)
 		if err != nil {
-			if mainfestTable[models.MANIFEST_PRO_FILE_ENROLLMENTS] != models.IMPORT_TYPE_BULK{
+			if mainfestTable[models.ManifestProFileEnrollments] != models.ImportTypeBulk {
 				err = orProcess.RollBackOneRoster(orgDistrict)
 			}
 			return err
@@ -153,8 +152,8 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	}
 
 	//process Demographics  (we don't use it right now)
-	// if mainfestTable[models.MANIFEST_PRO_FILE_DEMOGRAPHICS] != models.IMPORT_TYPE_ABSENT {
-	// 	err = ProcessDemographics(dirPath, orProcess, mainfestTable[models.MANIFEST_PRO_FILE_DEMOGRAPHICS])
+	// if mainfestTable[models.ManifestProFileDemographics] != models.ImportTypeAbsent {
+	// 	err = ProcessDemographics(dirPath, orProcess, mainfestTable[models.ManifestProFileDemographics])
 	// 	if err != nil {
 	// 		fmt.Println(">>> (rollback) errer happen when ProcessDemographics err -> ",err)
 	// 		err = orProcess.RollBackOneRoster(orgDistrict)
@@ -162,56 +161,55 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess)  error{
 	// 	}
 	// }
 
-	return nil;
+	return nil
 }
 
-
 func ReadManifestCSV(filename string) ([]models.OrManifest, error) {
-    // Open CSV file
-    f, err := os.Open(filename)
-    if err != nil {
-        return nil, err
-    }
-    defer f.Close()
+	// Open CSV file
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
 	var manifestValues []models.OrManifest
 
 	err = gocsv.UnmarshalFile(f, &manifestValues)
-	if err != nil { 
+	if err != nil {
 		return nil, err
 	}
-    return manifestValues, nil
+	return manifestValues, nil
 }
 
 func ProcessAcademicSessionsCSV(dirPath string, orProcess models.ORProcess, importType string) error {
 
-	academicSessionsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_ACADEMICSESSIONS)
+	academicSessionsPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameAcademicSessions)
 
 	f, err := os.Open(academicSessionsPath)
-    if err != nil {
-        return  err
-    }
-    defer f.Close()
+	if err != nil {
+		return err
+	}
+	defer f.Close()
 	var academicSessions []models.ORAcademicSessions
 
 	err = gocsv.UnmarshalFile(f, &academicSessions)
-	if err != nil { 
+	if err != nil {
 		return err
 	}
-	if importType == models.IMPORT_TYPE_BULK {
-	  
+	if importType == models.ImportTypeBulk {
+
 		err := orProcess.HandleAddAcademicSessions(academicSessions)
-			if err != nil {
-				return err
-			}
-	}else if importType == models.IMPORT_TYPE_DELTA {
+		if err != nil {
+			return err
+		}
+	} else if importType == models.ImportTypeDelta {
 		orAcademicSessionToEdit := []models.ORAcademicSessions{}
 		orAcademicSessionIDsToDelete := []string{}
-		for _,orAcademicSession := range academicSessions {
-			if orAcademicSession.Status == models.STATUS_TYPE_ACTIVE{
+		for _, orAcademicSession := range academicSessions {
+			if orAcademicSession.Status == models.StatusTypeActive {
 				orAcademicSessionToEdit = append(orAcademicSessionToEdit, orAcademicSession)
 				// err = orProcess.HandleEditClass(orClass)
-			}else if orAcademicSession.Status == models.STATUS_TYPE_TOBEDELETED{
-				orAcademicSessionIDsToDelete = append(orAcademicSessionIDsToDelete, orAcademicSession.SourcedId)
+			} else if orAcademicSession.Status == models.StatusTypeToBeDeleted {
+				orAcademicSessionIDsToDelete = append(orAcademicSessionIDsToDelete, orAcademicSession.SourcedID)
 			}
 			if err != nil {
 				return err
@@ -224,44 +222,42 @@ func ProcessAcademicSessionsCSV(dirPath string, orProcess models.ORProcess, impo
 		}
 	}
 
-    return nil
+	return nil
 }
 
-
-
-func ProcessOrgsCSV(dirPath string, orProcess models.ORProcess, importType string) ([]models.OROrg, []bson.ObjectId, bool, error) {
+func ProcessOrgsCSV(dirPath string, orProcess models.ORProcess, importType string) ([]models.OROrg, []string, bool, error) {
 
 	var orgDistricts []models.OROrg
-	var districtIDs []bson.ObjectId
+	var districtIDs []string
 	// do rollback for all district or not
 	rollback := true
-	orgsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_ORGS)
+	orgsPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameOrgs)
 
 	f, err := os.Open(orgsPath)
-    if err != nil {
-        return  orgDistricts, districtIDs, rollback, err
-    }
-    defer f.Close()
+	if err != nil {
+		return orgDistricts, districtIDs, rollback, err
+	}
+	defer f.Close()
 	var orgs []models.OROrg
 
 	err = gocsv.UnmarshalFile(f, &orgs)
-	if err != nil { 
+	if err != nil {
 		fmt.Println(err)
 		return orgDistricts, districtIDs, rollback, err
 	}
-	
-	if importType == models.IMPORT_TYPE_BULK {
+
+	if importType == models.ImportTypeBulk {
 		for _, org := range orgs {
 			var err error = nil
-			if org.OrgType == models.ORG_TYPE_DISTRICT {
-				// collect all district 
+			if org.OrgType == models.OrgTypeDistrict {
+				// collect all district
 				orgDistricts = append(orgDistricts, org)
-				
+
 				rollback, err = orProcess.HandleAddDistrict(org)
 				if err != nil {
 					return orgDistricts, districtIDs, rollback, err
 				}
-			}  
+			}
 		}
 
 		// get the mongo IDs for the district to use for edit and delete other files data
@@ -272,34 +268,34 @@ func ProcessOrgsCSV(dirPath string, orProcess models.ORProcess, importType strin
 
 		for _, org := range orgs {
 
-			if org.OrgType == models.ORG_TYPE_SCHOOL {
+			if org.OrgType == models.OrgTypeSchool {
 				err = orProcess.HandleAddSchool(org, districtIDs)
 				if err != nil {
 					return orgDistricts, districtIDs, true, err
 				}
 			}
 		}
-	}else if importType == models.IMPORT_TYPE_DELTA {
+	} else if importType == models.ImportTypeDelta {
 		for _, org := range orgs {
 			var err error = nil
-			if org.OrgType == models.ORG_TYPE_DISTRICT {
-				// // collect all district 
+			if org.OrgType == models.OrgTypeDistrict {
+				// // collect all district
 				orgDistricts = append(orgDistricts, org)
 
-				if org.Status == models.STATUS_TYPE_ACTIVE{
+				if org.Status == models.StatusTypeActive {
 					// err = orProcess.HandleEditDistrict(org)
 					err = orProcess.HandleAddOrEditDistrict(org)
-				}else if org.Status == models.STATUS_TYPE_TOBEDELETED{
+				} else if org.Status == models.StatusTypeToBeDeleted {
 					err = orProcess.HandleDeleteDistrict(org)
 				}
 
 				if err != nil {
 					return orgDistricts, districtIDs, false, err
 				}
-				
-			}  
+
+			}
 		}
-		
+
 		// get the mongo IDs for the district to use for edit and delete other files data
 		districtIDs, err := orProcess.GetDistrictsIDs(orgDistricts)
 		if err != nil {
@@ -307,10 +303,10 @@ func ProcessOrgsCSV(dirPath string, orProcess models.ORProcess, importType strin
 		}
 
 		for _, org := range orgs {
-			if org.OrgType == models.ORG_TYPE_SCHOOL {
-				if org.Status == models.STATUS_TYPE_ACTIVE{
+			if org.OrgType == models.OrgTypeSchool {
+				if org.Status == models.StatusTypeActive {
 					err = orProcess.HandleAddOrEditSchool(org, districtIDs)
-				}else if org.Status == models.STATUS_TYPE_TOBEDELETED{
+				} else if org.Status == models.StatusTypeToBeDeleted {
 					err = orProcess.HandleDeleteSchool(org, districtIDs)
 				}
 
@@ -319,46 +315,45 @@ func ProcessOrgsCSV(dirPath string, orProcess models.ORProcess, importType strin
 				}
 			}
 		}
-		
+
 	}
 
-    return orgDistricts, districtIDs, false, nil
+	return orgDistricts, districtIDs, false, nil
 }
 
-
-func ProcessOrgsClassLinkCSV(dirPath string, orProcess models.ORProcess, importType string) ([]models.OROrg, []bson.ObjectId, bool, error) {
+func ProcessOrgsClassLinkCSV(dirPath string, orProcess models.ORProcess, importType string) ([]models.OROrg, []string, bool, error) {
 
 	var orgDistricts []models.OROrg
-	var districtIDs []bson.ObjectId
+	var districtIDs []string
 	// do rollback for all district or not
 	rollback := true
-	orgsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_ORGS)
+	orgsPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameOrgs)
 
 	f, err := os.Open(orgsPath)
-    if err != nil {
-        return  orgDistricts, districtIDs, rollback, err
-    }
-    defer f.Close()
+	if err != nil {
+		return orgDistricts, districtIDs, rollback, err
+	}
+	defer f.Close()
 	var orgs []models.OROrg
 
 	err = gocsv.UnmarshalFile(f, &orgs)
-	if err != nil { 
+	if err != nil {
 		fmt.Println(err)
 		return orgDistricts, districtIDs, rollback, err
 	}
-	
-	if importType == models.IMPORT_TYPE_BULK {
+
+	if importType == models.ImportTypeBulk {
 		for _, org := range orgs {
 			var err error = nil
-			if org.OrgType == models.ORG_TYPE_DISTRICT {
-				// collect all district 
+			if org.OrgType == models.OrgTypeDistrict {
+				// collect all district
 				orgDistricts = append(orgDistricts, org)
-				
+
 				rollback, err = orProcess.HandleAddDistrict(org)
 				if err != nil {
 					return orgDistricts, districtIDs, rollback, err
 				}
-			} 
+			}
 		}
 
 		districtIDs, err := orProcess.GetDistrictsIDs(orgDistricts)
@@ -366,10 +361,10 @@ func ProcessOrgsClassLinkCSV(dirPath string, orProcess models.ORProcess, importT
 			return orgDistricts, districtIDs, true, err
 		}
 
-		for _, org := range orgs{
-			if org.OrgType == models.ORG_TYPE_SCHOOL {
-				if len(orgDistricts) ==1 && org.ParentSourcedId ==""{
-					org.ParentSourcedId = orgDistricts[0].SourcedId
+		for _, org := range orgs {
+			if org.OrgType == models.OrgTypeSchool {
+				if len(orgDistricts) == 1 && org.ParentSourcedID == "" {
+					org.ParentSourcedID = orgDistricts[0].SourcedID
 				}
 				err = orProcess.HandleAddSchool(org, districtIDs)
 				if err != nil {
@@ -377,24 +372,24 @@ func ProcessOrgsClassLinkCSV(dirPath string, orProcess models.ORProcess, importT
 				}
 			}
 		}
-	}else if importType == models.IMPORT_TYPE_DELTA {
+	} else if importType == models.ImportTypeDelta {
 		for _, org := range orgs {
 			var err error = nil
-			if org.OrgType == models.ORG_TYPE_DISTRICT {
-				// collect all district 
+			if org.OrgType == models.OrgTypeDistrict {
+				// collect all district
 				orgDistricts = append(orgDistricts, org)
 
-				if org.Status == models.STATUS_TYPE_ACTIVE{
+				if org.Status == models.StatusTypeActive {
 					// err = orProcess.HandleEditDistrict(org)
 					err = orProcess.HandleAddOrEditDistrict(org)
-				}else if org.Status == models.STATUS_TYPE_TOBEDELETED{
+				} else if org.Status == models.StatusTypeToBeDeleted {
 					err = orProcess.HandleDeleteDistrict(org)
 				}
 
 				if err != nil {
 					return orgDistricts, districtIDs, false, err
 				}
-				
+
 			}
 		}
 
@@ -404,13 +399,13 @@ func ProcessOrgsClassLinkCSV(dirPath string, orProcess models.ORProcess, importT
 		}
 
 		for _, org := range orgs {
-			if org.OrgType == models.ORG_TYPE_SCHOOL {
-				if org.Status == models.STATUS_TYPE_ACTIVE{
+			if org.OrgType == models.OrgTypeSchool {
+				if org.Status == models.StatusTypeActive {
 					err = orProcess.HandleAddOrEditSchool(org, districtIDs)
-				}else if org.Status == models.STATUS_TYPE_TOBEDELETED{
+				} else if org.Status == models.StatusTypeToBeDeleted {
 					err = orProcess.HandleDeleteSchool(org, districtIDs)
 				}
-				
+
 				if err != nil {
 					return orgDistricts, districtIDs, false, err
 				}
@@ -418,41 +413,39 @@ func ProcessOrgsClassLinkCSV(dirPath string, orProcess models.ORProcess, importT
 		}
 	}
 
-
-    return orgDistricts, districtIDs, false, nil
+	return orgDistricts, districtIDs, false, nil
 }
 
+func ProcessCoursesCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []string) error {
 
-func ProcessCoursesCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []bson.ObjectId) error {
-
-	coursesPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_COURSES)
+	coursesPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameCourses)
 
 	f, err := os.Open(coursesPath)
-    if err != nil {
-        return err
-    }
-    defer f.Close()
+	if err != nil {
+		return err
+	}
+	defer f.Close()
 	var orCourses []models.ORCourse
 	err = gocsv.UnmarshalFile(f, &orCourses)
-	if err != nil { 
+	if err != nil {
 		return err
 	}
 
-	if importType == models.IMPORT_TYPE_BULK {
-			err := orProcess.HandleAddCourses(orCourses, districtIDs)
-			if err != nil {
-				return err
-			}
-	}else if importType == models.IMPORT_TYPE_DELTA {
+	if importType == models.ImportTypeBulk {
+		err := orProcess.HandleAddCourses(orCourses, districtIDs)
+		if err != nil {
+			return err
+		}
+	} else if importType == models.ImportTypeDelta {
 		orCourseToEdit := []models.ORCourse{}
 		orCoursesIDsToDelete := []string{}
-		for _,orCourse := range orCourses {
-			if orCourse.Status == models.STATUS_TYPE_ACTIVE{
+		for _, orCourse := range orCourses {
+			if orCourse.Status == models.StatusTypeActive {
 				// err = orProcess.HandleEditCourse(orCourse)
 				orCourseToEdit = append(orCourseToEdit, orCourse)
-			}else if orCourse.Status == models.STATUS_TYPE_TOBEDELETED{
+			} else if orCourse.Status == models.StatusTypeToBeDeleted {
 				// err = orProcess.HandleDeleteCourse(orCourse)
-				orCoursesIDsToDelete = append(orCoursesIDsToDelete, orCourse.SourcedId)
+				orCoursesIDsToDelete = append(orCoursesIDsToDelete, orCourse.SourcedID)
 			}
 			if err != nil {
 				return err
@@ -463,41 +456,40 @@ func ProcessCoursesCSV(dirPath string, orProcess models.ORProcess, importType st
 		if err != nil {
 			return err
 		}
-		
+
 	}
-    return nil
+	return nil
 }
 
+func ProcessClassesCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []string) error {
 
-func ProcessClassesCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []bson.ObjectId) error {
-
-	classesPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_CLASSES)
+	classesPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameClasses)
 
 	f, err := os.Open(classesPath)
-    if err != nil {
-        return err
-    }
-    defer f.Close()
-	var orClasses []models.ORClass
-	err = gocsv.UnmarshalFile(f, &orClasses)
-	if err != nil { 
+	if err != nil {
 		return err
 	}
-	
-	if importType == models.IMPORT_TYPE_BULK {
-			err := orProcess.HandleAddClasses(orClasses, districtIDs)
-			if err != nil {
-				return err
-			}
-	}else if importType == models.IMPORT_TYPE_DELTA {
+	defer f.Close()
+	var orClasses []models.ORClass
+	err = gocsv.UnmarshalFile(f, &orClasses)
+	if err != nil {
+		return err
+	}
+
+	if importType == models.ImportTypeBulk {
+		err := orProcess.HandleAddClasses(orClasses, districtIDs)
+		if err != nil {
+			return err
+		}
+	} else if importType == models.ImportTypeDelta {
 		orClassesToEdit := []models.ORClass{}
 		orClassIDsToDelete := []string{}
-		for _,orClass := range orClasses {
-			if orClass.Status == models.STATUS_TYPE_ACTIVE{
+		for _, orClass := range orClasses {
+			if orClass.Status == models.StatusTypeActive {
 				orClassesToEdit = append(orClassesToEdit, orClass)
 				// err = orProcess.HandleEditClass(orClass)
-			}else if orClass.Status == models.STATUS_TYPE_TOBEDELETED{
-				orClassIDsToDelete = append(orClassIDsToDelete, orClass.SourcedId)
+			} else if orClass.Status == models.StatusTypeToBeDeleted {
+				orClassIDsToDelete = append(orClassIDsToDelete, orClass.SourcedID)
 			}
 			if err != nil {
 				return err
@@ -509,37 +501,37 @@ func ProcessClassesCSV(dirPath string, orProcess models.ORProcess, importType st
 			return err
 		}
 	}
-    return nil
+	return nil
 }
 
-func ProcessUsersCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []bson.ObjectId) error {
+func ProcessUsersCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []string) error {
 
-	usersPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_USERS)
+	usersPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameUsers)
 
 	f, err := os.Open(usersPath)
-    if err != nil {
-        return  err
-    }
-    defer f.Close()
+	if err != nil {
+		return err
+	}
+	defer f.Close()
 	var orUsers []models.ORUser
 
 	err = gocsv.UnmarshalFile(f, &orUsers)
-	if err != nil { 
+	if err != nil {
 		return err
 	}
-	if importType == models.IMPORT_TYPE_BULK {
+	if importType == models.ImportTypeBulk {
 		err := orProcess.HandleAddUsers(orUsers, districtIDs)
 		if err != nil {
 			return err
 		}
-	}else if importType == models.IMPORT_TYPE_DELTA {
+	} else if importType == models.ImportTypeDelta {
 		orUsersToEdit := []models.ORUser{}
 		orUsersIDsToDelete := []string{}
-		for _,orUser := range orUsers {
-			if orUser.Status == models.STATUS_TYPE_ACTIVE{
+		for _, orUser := range orUsers {
+			if orUser.Status == models.StatusTypeActive {
 				orUsersToEdit = append(orUsersToEdit, orUser)
-			}else if orUser.Status == models.STATUS_TYPE_TOBEDELETED{
-				orUsersIDsToDelete = append(orUsersIDsToDelete, orUser.SourcedId)
+			} else if orUser.Status == models.StatusTypeToBeDeleted {
+				orUsersIDsToDelete = append(orUsersIDsToDelete, orUser.SourcedID)
 			}
 			if err != nil {
 				return err
@@ -552,38 +544,37 @@ func ProcessUsersCSV(dirPath string, orProcess models.ORProcess, importType stri
 		}
 	}
 
-    return nil
+	return nil
 }
 
+func ProcessEntrollmentCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []string) error {
 
-func ProcessEntrollmentCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []bson.ObjectId) error {
-
-	entrollmentsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_ENROLLMENTS)
+	entrollmentsPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameEnrollments)
 
 	f, err := os.Open(entrollmentsPath)
-    if err != nil {
-        return  err
-    }
-    defer f.Close()
+	if err != nil {
+		return err
+	}
+	defer f.Close()
 	var orEntrollments []models.OREnrollment
 
 	err = gocsv.UnmarshalFile(f, &orEntrollments)
-	if err != nil { 
+	if err != nil {
 		return err
 	}
-	if importType == models.IMPORT_TYPE_BULK {
+	if importType == models.ImportTypeBulk {
 		err := orProcess.HandleAddEnrollment(orEntrollments, districtIDs)
 		if err != nil {
 			return err
 		}
-	}else if importType == models.IMPORT_TYPE_DELTA {
-		
+	} else if importType == models.ImportTypeDelta {
+
 		orEntrollmentsToEdit := []models.OREnrollment{}
 		orEntrollmentsIDsToDelete := []models.OREnrollment{}
-		for _,orEntrollment := range orEntrollments {
-			if orEntrollment.Status == models.STATUS_TYPE_ACTIVE{
+		for _, orEntrollment := range orEntrollments {
+			if orEntrollment.Status == models.StatusTypeActive {
 				orEntrollmentsToEdit = append(orEntrollmentsToEdit, orEntrollment)
-			}else if orEntrollment.Status == models.STATUS_TYPE_TOBEDELETED{
+			} else if orEntrollment.Status == models.StatusTypeToBeDeleted {
 				orEntrollmentsIDsToDelete = append(orEntrollmentsIDsToDelete, orEntrollment)
 			}
 			if err != nil {
@@ -597,34 +588,33 @@ func ProcessEntrollmentCSV(dirPath string, orProcess models.ORProcess, importTyp
 		}
 	}
 
-    return nil
+	return nil
 }
 
 func ProcessDemographicsCSV(dirPath string, orProcess models.ORProcess, importType string) error {
 
-	demographicsPath := fmt.Sprintf("%s/%s", dirPath, models.CSV_NAME_DEMOGRAPHICS)
+	demographicsPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameDemographics)
 
 	f, err := os.Open(demographicsPath)
-    if err != nil {
-        return  err
-    }
-    defer f.Close()
+	if err != nil {
+		return err
+	}
+	defer f.Close()
 	var orDemographics []models.ORDemographics
 
 	err = gocsv.UnmarshalFile(f, &orDemographics)
-	if err != nil { 
+	if err != nil {
 		return err
 	}
-	if importType == models.IMPORT_TYPE_BULK {
+	if importType == models.ImportTypeBulk {
 		// err := orProcess.HandleAddorDemographics(orEntrollments)
 		// if err != nil {
 		// 	fmt.Println(">>> ProcessEntrollments error ",err)
 		// 	return err
 		// }
-	}else if importType == models.IMPORT_TYPE_DELTA {
+	} else if importType == models.ImportTypeDelta {
 		fmt.Println(">> *** Delta *** ProcessDemographics")
 	}
 
-    return nil
+	return nil
 }
-

@@ -461,8 +461,17 @@ func ProcessCoursesCSV(dirPath string, orProcess models.ORProcess, importType st
 	return nil
 }
 
-func ProcessClassesCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []string) error {
+// ProcessClassesString process classes from CSV string
+func ProcessClassesString(csvStr string, orProcess models.ORProcess, importType string, districtIDs []string) error {
+	var orClasses []models.ORClass
 
+	if err := gocsv.UnmarshalString(csvStr, &orClasses); err != nil {
+		return err
+	}
+	return ProcessClasses(orProcess, orClasses, importType, districtIDs)
+}
+
+func ProcessClassesCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []string) error {
 	classesPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameClasses)
 
 	f, err := os.Open(classesPath)
@@ -476,6 +485,11 @@ func ProcessClassesCSV(dirPath string, orProcess models.ORProcess, importType st
 		return err
 	}
 
+	return ProcessClasses(orProcess, orClasses, importType, districtIDs)
+}
+
+// ProcessClasses processes class data
+func ProcessClasses(orProcess models.ORProcess, orClasses []models.ORClass, importType string, districtIDs []string) error {
 	if importType == models.ImportTypeBulk {
 		err := orProcess.HandleAddClasses(orClasses, districtIDs)
 		if err != nil {
@@ -491,13 +505,11 @@ func ProcessClassesCSV(dirPath string, orProcess models.ORProcess, importType st
 			} else if orClass.Status == models.StatusTypeToBeDeleted {
 				orClassIDsToDelete = append(orClassIDsToDelete, orClass.SourcedID)
 			}
-			if err != nil {
-				return err
-			}
 		}
-		err = orProcess.HandleAddOrEditClass(orClassesToEdit, districtIDs)
-		err = orProcess.HandleDeleteClasses(orClassIDsToDelete, districtIDs)
-		if err != nil {
+		if err := orProcess.HandleAddOrEditClass(orClassesToEdit, districtIDs); err != nil {
+			return err
+		}
+		if err := orProcess.HandleDeleteClasses(orClassIDsToDelete, districtIDs); err != nil {
 			return err
 		}
 	}

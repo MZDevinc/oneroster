@@ -461,6 +461,11 @@ func ProcessCoursesCSV(dirPath string, orProcess models.ORProcess, importType st
 	return nil
 }
 
+// EstimateClassesString estimates and error checks classes CSV
+func EstimateClassesString(csvStr string, orProcess models.ORProcess, importType string, districtIDs []string) (int, error) {
+
+}
+
 // ProcessClassesString process classes from CSV string
 func ProcessClassesString(csvStr string, orProcess models.ORProcess, importType string, districtIDs []string) error {
 	var orClasses []models.ORClass
@@ -510,6 +515,10 @@ func ProcessClasses(orProcess models.ORProcess, orClasses []models.ORClass, impo
 			return err
 		}
 		if err := orProcess.HandleDeleteClasses(orClassIDsToDelete, districtIDs); err != nil {
+			return err
+		}
+	} else if importType == models.ImportTypeEstimate {
+		if err := orProcess.HandleEstimateClasses(orClasses); err != nil {
 			return err
 		}
 	}

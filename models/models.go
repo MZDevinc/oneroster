@@ -8,41 +8,48 @@ type ORProcess interface {
 	HandleDeleteAcademicSessions(orAcademicSessionsIDs []string) error
 	HandleEditAcademicSessions(orAcademicSessions []ORAcademicSessions) error
 	HandleAddOrEditAcademicSessions(orAcademicSessions []ORAcademicSessions) error
+	HandleEstimateNewAcademicSessions(orClass []ORClass, districtIDs []string) (int, error)
 
 	// Users
 	HandleAddUsers(orUser []ORUser, districtIDs []string) error
 	HandleDeleteUsers(oruserIDs []string, districtIDs []string) error
 	HandleEditUsers(orUser []ORUser) error
 	HandleAddOrEditUsers(orUser []ORUser, districtIDs []string) error
+	HandleEstimateNewUsers(orUsers []ORUser, districtIDs []string) (int, error)
 
 	// Districts
 	HandleAddDistrict(orOrg OROrg) (bool, error)
 	HandleDeleteDistrict(orOrg OROrg) error
 	HandleEditDistrict(orOrg OROrg, districtID string) error
 	HandleAddOrEditDistrict(orOrg OROrg) error
+	HandleEstimateNewDistricts(orOrgs []OROrg, districtIDs []string) (int, error)
 
 	// Schools
 	HandleAddSchool(orOrg OROrg, districtIDs []string) error
 	HandleDeleteSchool(orOrg OROrg, districtIDs []string) error
 	HandleEditSchool(orOrg OROrg) error
 	HandleAddOrEditSchool(orOrg OROrg, districtIDs []string) error
+	HandleEstimateNewSchools(orOrgs []OROrg, districtIDs []string) (int, error)
 
 	// Classes
 	HandleAddClasses(orClass []ORClass, districtIDs []string) error
 	HandleDeleteClasses(orClassIDs []string, districtIDs []string) error
 	HandleEditClass(orClass []ORClass) error
 	HandleAddOrEditClass(orClass []ORClass, districtIDs []string) error
+	HandleEstimateNewClasses(orClasses []ORClass, districtIDs []string) (int, error)
 
 	// Courses
 	HandleAddCourses(orCourse []ORCourse, districtIDs []string) error
 	HandleDeleteCourses(orCourseIDs []string, districtIDs []string) error
 	HandleEditCourse(orCourse []ORCourse) error
 	HandleAddOrEditCourse(orCourse []ORCourse, districtIDs []string) error
+	HandleEstimateNewCourses(orCourses []ORCourse, districtIDs []string) (int, error)
 
 	// Enrollments
 	HandleAddEnrollment(orEnrollment []OREnrollment, districtIDs []string) error
 	HandleDeleteEnrollments(orEnrollment []OREnrollment, districtIDs []string) error
 	HandleAddOrEditEnrollments(orEnrollment []OREnrollment, districtIDs []string) error
+	HandleEstimateNewEnrollments(orEnrollments []OREnrollment, districtIDs []string) (int, error)
 
 	RollBackOneRoster(orgDistrict []OROrg) error
 
@@ -258,6 +265,8 @@ const (
 	ImportTypeBulk   = "bulk"
 	ImportTypeDelta  = "delta"
 	ImportTypeAbsent = "absent"
+	// Custom extension
+	ImportTypeNewEstimate = "new_estimate"
 )
 
 // manifest property names

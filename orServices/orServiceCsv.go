@@ -142,7 +142,7 @@ func ProcessFiles(dirPath string, orProcess models.ORProcess) error {
 
 	//process User Entrollments
 	if mainfestTable[models.ManifestProFileEnrollments] != models.ImportTypeAbsent {
-		err = ProcessEntrollmentCSV(dirPath, orProcess, mainfestTable[models.ManifestProFileEnrollments], districtIDs)
+		err = ProcessEnrollmentCSV(dirPath, orProcess, mainfestTable[models.ManifestProFileEnrollments], districtIDs)
 		if err != nil {
 			if mainfestTable[models.ManifestProFileEnrollments] != models.ImportTypeBulk {
 				err = orProcess.RollBackOneRoster(orgDistrict)
@@ -590,7 +590,56 @@ func ProcessUsers(orProcess models.ORProcess, orUsers []models.ORUser, importTyp
 	return nil
 }
 
-func ProcessEntrollmentCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []string) error {
+// Enrollments
+
+// UnmarshalEnrollmentsString unmarshals oneroster enrollments csv string
+func UnmarshalEnrollmentsString(csvStr string) ([]models.OREnrollment, error) {
+	var orEnrollments []models.OREnrollment
+	if err := gocsv.UnmarshalString(csvStr, &orEnrollments); err != nil {
+		return orEnrollments, err
+	}
+	return orEnrollments, nil
+}
+
+// ProcessEnrollmentsString process enrollments from CSV string
+func ProcessEnrollmentsString(csvStr string, orProcess models.ORProcess, importType string, districtIDs []string) error {
+	orEnrollments, err := UnmarshalEnrollmentsString(csvStr)
+	if err != nil {
+		return err
+	}
+	return ProcessEnrollments(orProcess, orEnrollments, importType, districtIDs)
+}
+
+// ProcessEnrollments process oneroster enrollments
+func ProcessEnrollments(orProcess models.ORProcess, orEnrollments []models.OREnrollment, importType string, districtIDs []string) error {
+	if importType == models.ImportTypeBulk {
+		err := orProcess.HandleAddEnrollment(orEnrollments, districtIDs)
+		if err != nil {
+			return err
+		}
+	} else if importType == models.ImportTypeDelta {
+
+		orEntrollmentsToEdit := []models.OREnrollment{}
+		orEntrollmentsIDsToDelete := []models.OREnrollment{}
+		for _, orEntrollment := range orEnrollments {
+			if orEntrollment.Status == models.StatusTypeActive {
+				orEntrollmentsToEdit = append(orEntrollmentsToEdit, orEntrollment)
+			} else if orEntrollment.Status == models.StatusTypeToBeDeleted {
+				orEntrollmentsIDsToDelete = append(orEntrollmentsIDsToDelete, orEntrollment)
+			}
+		}
+		if err := orProcess.HandleDeleteEnrollments(orEntrollmentsIDsToDelete, districtIDs); err != nil {
+			return err
+		}
+		if err := orProcess.HandleAddOrEditEnrollments(orEntrollmentsToEdit, districtIDs); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ProcessEnrollmentCSV process oneroster enrollment CSV
+func ProcessEnrollmentCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []string) error {
 
 	entrollmentsPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameEnrollments)
 
@@ -605,33 +654,7 @@ func ProcessEntrollmentCSV(dirPath string, orProcess models.ORProcess, importTyp
 	if err != nil {
 		return err
 	}
-	if importType == models.ImportTypeBulk {
-		err := orProcess.HandleAddEnrollment(orEntrollments, districtIDs)
-		if err != nil {
-			return err
-		}
-	} else if importType == models.ImportTypeDelta {
-
-		orEntrollmentsToEdit := []models.OREnrollment{}
-		orEntrollmentsIDsToDelete := []models.OREnrollment{}
-		for _, orEntrollment := range orEntrollments {
-			if orEntrollment.Status == models.StatusTypeActive {
-				orEntrollmentsToEdit = append(orEntrollmentsToEdit, orEntrollment)
-			} else if orEntrollment.Status == models.StatusTypeToBeDeleted {
-				orEntrollmentsIDsToDelete = append(orEntrollmentsIDsToDelete, orEntrollment)
-			}
-			if err != nil {
-				return err
-			}
-		}
-		err = orProcess.HandleDeleteEnrollments(orEntrollmentsIDsToDelete, districtIDs)
-		err = orProcess.HandleAddOrEditEnrollments(orEntrollmentsToEdit, districtIDs)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return ProcessEnrollments(orProcess, orEntrollments, importType, districtIDs)
 }
 
 func ProcessDemographicsCSV(dirPath string, orProcess models.ORProcess, importType string) error {

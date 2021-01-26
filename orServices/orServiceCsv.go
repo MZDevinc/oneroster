@@ -544,11 +544,19 @@ func ProcessUsersCSV(dirPath string, orProcess models.ORProcess, importType stri
 	return ProcessUsers(orProcess, orUsers, importType, districtIDs)
 }
 
+// UnmarshalUsersString unmarshals oneroster users csv string
+func UnmarshalUsersString(csvStr string) ([]models.ORUser, error) {
+	var orUsers []models.ORUser
+	if err := gocsv.UnmarshalString(csvStr, &orUsers); err != nil {
+		return orUsers, err
+	}
+	return orUsers, nil
+}
+
 // ProcessUsersString process users from CSV string
 func ProcessUsersString(csvStr string, orProcess models.ORProcess, importType string, districtIDs []string) error {
-	var orUsers []models.ORUser
-
-	if err := gocsv.UnmarshalString(csvStr, &orUsers); err != nil {
+	orUsers, err := UnmarshalUsersString(csvStr)
+	if err != nil {
 		return err
 	}
 	return ProcessUsers(orProcess, orUsers, importType, districtIDs)

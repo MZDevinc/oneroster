@@ -461,16 +461,25 @@ func ProcessCoursesCSV(dirPath string, orProcess models.ORProcess, importType st
 	return nil
 }
 
+// UnmarshalClassesString unmarshals oneroster classes csv string
+func UnmarshalClassesString(csvStr string) ([]models.ORClass, error) {
+	var orClasses []models.ORClass
+	if err := gocsv.UnmarshalString(csvStr, &orClasses); err != nil {
+		return orClasses, err
+	}
+	return orClasses, nil
+}
+
 // ProcessClassesString process classes from CSV string
 func ProcessClassesString(csvStr string, orProcess models.ORProcess, importType string, districtIDs []string) error {
-	var orClasses []models.ORClass
-
-	if err := gocsv.UnmarshalString(csvStr, &orClasses); err != nil {
+	orClasses, err := UnmarshalClassesString(csvStr)
+	if err != nil {
 		return err
 	}
 	return ProcessClasses(orProcess, orClasses, importType, districtIDs)
 }
 
+// ProcessClassesCSV processes oneroster csv file for classes
 func ProcessClassesCSV(dirPath string, orProcess models.ORProcess, importType string, districtIDs []string) error {
 	classesPath := fmt.Sprintf("%s/%s", dirPath, models.CsvNameClasses)
 

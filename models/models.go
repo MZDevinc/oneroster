@@ -167,7 +167,7 @@ type ORUser struct {
 	OrgSourcedIds    string          `csv:"orgSourcedIds"` //List of GUID References.
 	Orgs             []GUIDRef       `json:"orgs"`
 	Role             string          `csv:"role" json:"role"` //Enumeration
-	RoleName         string          `csv:"role_name" json:"role_name"`
+	RoleName         string          `csv:"roleName" json:"role_name"`
 	Username         string          `csv:"username" json:"username"`
 	UserIds          string          `csv:"userIds"` //[] string
 	UserIdsIdentifer []UserIdentifer `json:"userIds"`

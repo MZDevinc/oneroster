@@ -164,12 +164,12 @@ type ORUser struct {
 	Status           string          `csv:"status" json:"status"`                     //Enumeration
 	DateLastModified string          `csv:"dateLastModified" json:"dateLastModified"` //DateTime
 	EnabledUser      bool            `csv:"enabledUser" json:"enabledUser"`
-	OrgSourcedIds    string          `csv:"orgSourcedIds"` //List of GUID References.
+	OrgSourcedIds    string          `csv:"orgSourcedIds" json:"orgSourcedIds"` //List of GUID References.
 	Orgs             []GUIDRef       `json:"orgs"`
 	Role             string          `csv:"role" json:"role"` //Enumeration
 	Username         string          `csv:"username" json:"username"`
-	UserIds          string          `csv:"userIds"` //[] string
-	UserIdsIdentifer []UserIdentifer `json:"userIds"`
+	UserIds          string          `csv:"userIds" json:"userIds"` //[] string
+	UserIdsIdentifer []UserIdentifer `json:"userIdsIdentifier"`
 	GivenName        string          `csv:"givenName" json:"givenName"`
 	FamilyName       string          `csv:"familyName" json:"familyName"`
 	MiddleName       string          `csv:"middleName" json:"middleName"`
@@ -177,7 +177,7 @@ type ORUser struct {
 	Email            string          `csv:"email" json:"email"`
 	Sms              string          `csv:"sms" json:"sms"`
 	Phone            string          `csv:"phone" json:"phone"`
-	AgentSourcedIds  string          `csv:"agentSourcedIds"` //List of GUID References
+	AgentSourcedIds  string          `csv:"agentSourcedIds" json:"agentSourcedIds"` //List of GUID References
 	Agents           []GUIDRef       `json:"agents"`
 	Grades           string          `csv:"grades" json:"grades"`
 	Password         string          `csv:"password" json:"password"`

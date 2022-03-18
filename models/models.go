@@ -166,6 +166,7 @@ type ORUser struct {
 	EnabledUser      bool            `csv:"enabledUser" json:"enabledUser"`
 	OrgSourcedIds    string          `csv:"orgSourcedIds" json:"orgSourcedIds"` //List of GUID References.
 	Orgs             []GUIDRef       `json:"orgs"`
+	OrgName          string          `csv:"OrgName" json:"OrgName"`
 	Role             string          `csv:"role" json:"role"` //Enumeration
 	Username         string          `csv:"username" json:"username"`
 	UserIds          string          `csv:"userIds" json:"userIds"` //[] string
